@@ -5,6 +5,6 @@ private String name;
 private int age;
 private String breed;
 private String description;
-private boolean adopted;
+private Status status;
 
 }

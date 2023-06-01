@@ -41,6 +41,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                         Message message = update.message();
                         Long chatId = message.chat().id();
                         String text = message.text();
+                        Long userId = message.from().id();
+
 
                         if ("/start".equals(text)) {
                             sendMessage(chatId, "Привет! Я помогу тебе выбрать " +
