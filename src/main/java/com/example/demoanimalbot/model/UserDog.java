@@ -6,31 +6,29 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-
+import java.util.List;
+/**
+ * Класс для объектов, которые берут
+ * из приюта собак
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
 @Getter
 @Entity
-public class Cat extends Pet {
+public class UserDog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     private String name;
-    private int age;
-    private String breed;
-    private String description;
-    private Status status;
-    @ManyToOne
-    private UserCat user;
+    private long chatId;
+    private String email;
+    private String phoneNumber;
 
-    public Cat(String name, int age, String breed) {
+    public UserDog(String name, String email, String phoneNumber) {
         this.name = name;
-        this.age = age;
-        this.breed = breed;
-        this.status = Status.SHELTER;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
     }
-
-
 }
