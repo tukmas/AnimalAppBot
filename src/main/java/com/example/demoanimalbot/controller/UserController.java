@@ -2,6 +2,10 @@ package com.example.demoanimalbot.controller;
 
 import com.example.demoanimalbot.model.*;
 import com.example.demoanimalbot.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,7 +19,18 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
-
+    @Operation(summary = "Создание в базе данных владельца Cat",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Создан владелец Cat",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "userCat"
+    )
     @PostMapping("/userCat")
     public UserCat createUserCat(String name, String email, String phoneNumber) {
         return userService.createUserCat(name, email, phoneNumber);
