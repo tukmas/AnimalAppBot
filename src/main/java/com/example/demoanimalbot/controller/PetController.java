@@ -155,7 +155,18 @@ public class PetController {
      * @param userId идентификатор Юзера
      * @return список питомцев
      */
-
+    @Operation(summary = "Поиск Dog в базе данных по идентификатору владельца",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый Dog по идентификатору владельца",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "user-dogs"
+    )
     @GetMapping("/user-dogs")
     public List<Dog> findDogsByUserId(long userId) {
         return petService.findDogsByUserId(userId);
