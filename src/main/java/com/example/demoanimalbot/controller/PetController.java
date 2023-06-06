@@ -170,7 +170,18 @@ public class PetController {
     public Dog takeDogAtHome(Long dogId, Long userId) {
         return petService.takeDogAtHome(dogId, userId);
     }
-
+    @Operation(summary = "Поиск владельца Cat в базе данных",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый владелец Cat по идентификатору",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "userCat"
+    )
     /**
      * Контроллеры позволяют найти список кошек, забранных Юзером из приюта
      *
@@ -187,7 +198,7 @@ public class PetController {
      * @param userId идентификатор Юзера
      * @return список питомцев
      */
-    @Operation(summary = "Поиск Dog в базе данных по идентификатору владельца",
+    @Operation(summary = "Поиск владельца Dog в базе данных по идентификатору владельца",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
