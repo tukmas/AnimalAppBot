@@ -19,6 +19,7 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
+
     @Operation(summary = "Создание в базе данных владельца Cat",
             responses = {
                     @ApiResponse(
@@ -35,11 +36,23 @@ public class UserController {
     public UserCat createUserCat(String name, String email, String phoneNumber) {
         return userService.createUserCat(name, email, phoneNumber);
     }
-
+    @Operation(summary = "Создание в базе данных владельца Dog",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Создан владелец Dog",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "userDog"
+    )
     @PostMapping("/userDog")
     public UserDog createUserDog(String name, String email, String phoneNumber) {
         return userService.createUserDog(name, email, phoneNumber);
     }
+
     @Operation(summary = "Поиск владельца Cat в базе данных",
             responses = {
                     @ApiResponse(
@@ -61,6 +74,18 @@ public class UserController {
         return userService.findUserCat(id);
     }
 
+    @Operation(summary = "Поиск владельца Dog в базе данных",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый владелец Dog по идентификатору",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "userDog"
+    )
     /** Контроллер для поиска пользователя приюта для собак по идентификатору
      * @param id - идентификатор пользователя в БД
      * @return объект
@@ -69,4 +94,5 @@ public class UserController {
     public Optional<UserDog> findUserDogById(long id) {
         return userService.findUserDog(id);
     }
+
 }
