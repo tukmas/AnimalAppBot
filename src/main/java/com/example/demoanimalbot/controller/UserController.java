@@ -40,7 +40,18 @@ public class UserController {
     public UserDog createUserDog(String name, String email, String phoneNumber) {
         return userService.createUserDog(name, email, phoneNumber);
     }
-
+    @Operation(summary = "Поиск владельца Cat в базе данных",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый владелец Cat по идентификатору",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "userCat"
+    )
     /** Контроллер для поиска пользователя приюта для котов по идентификатору
      * @param id - идентификатор пользователя в БД
      * @return объект
