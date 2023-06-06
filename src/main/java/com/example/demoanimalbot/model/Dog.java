@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,6 +23,7 @@ public class Dog extends Pet {
     private String breed;
     private String description;
     private Status status;
+    private LocalDate dateOfAdoption;
 
     @ManyToOne
     private UserDog user;
