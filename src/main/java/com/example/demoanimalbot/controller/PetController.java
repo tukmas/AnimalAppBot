@@ -2,12 +2,14 @@ package com.example.demoanimalbot.controller;
 
 import com.example.demoanimalbot.model.Cat;
 import com.example.demoanimalbot.model.Dog;
+import com.example.demoanimalbot.model.Status;
 import com.example.demoanimalbot.service.PetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,17 +49,29 @@ public class PetController {
                          @Parameter(description = "Порода питомца") @RequestParam(required = true) String breed) {
         return petService.createCat(name, age, breed);
     }
-
+    @Operation(summary = "Создание в базе данных объекта Dog",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Созданный объект Dog",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "Dog")
     /**
      * Контроллер для создания объекта Собака
      *
      * @param name  - имя собаки
-     * @param age   - возраст собаки
+     * @param age - возраст собаки
      * @param breed - порода собаки
-     * @return возвращает объект Собака
+     * @return возвращает объект Собакааиптп
      */
     @PostMapping("/dog")
-    public Dog createDog(String name, int age, String breed) {
+    public Dog createDog(@Parameter(description = "Имя питомца") @RequestParam(required = true) String name,
+                         @Parameter(description = "возраст питомца") @RequestParam(required = true) int age,
+                         @Parameter(description = "Порода собаки") @RequestParam(required = true) String breed) {
         return petService.createDog(name, age, breed);
     }
 
@@ -75,18 +89,27 @@ public class PetController {
     )
     /**
      * Контроллер для поиска кота по идентификатору
-     *
      * @param catId - идентификатор кота
      * @return - объект Кот
      */
     @GetMapping("/cat")
-    public Optional<Cat> findCatById(@Parameter (description = "Идентификатор объекта Cat", example = "1") long catId) {
+    public Optional<Cat> findCotById(long catId) {
         return petService.findCat(catId);
     }
-
+    @Operation(summary = "Поиск объекта Dog в базе данных",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый объект Dog по идентификатору",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "Dog"
+    )
     /**
      * Контроллер для поиска собаки по идентификатору
-     *
      * @param dogId - идентификатор собаки
      * @return - объект Собака
      */
@@ -118,11 +141,22 @@ public class PetController {
      * @return возвращает отредактированный объект класса Cat
      */
     @PutMapping("/cat")
-    public Cat takeCatAtHome(@Parameter(description = "Идентификатор объекта Cat") Long catId,
-                             @Parameter(description = "Идентификатор объекта UserCat") Long userId) {
+    public Cat takeCatAtHome(Long catId, Long userId) {
         return petService.takeCatAtHome(catId, userId);
     }
-
+    @Operation(summary = "Усыновление объекта Dog и внесение соответствующих изменений в базу данных: " +
+            "изменение статуса и заполнение поля user",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Объект Dog с измененным статусом и с заполненным полем user",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "Dog"
+    )
     /**
      * Контроллер позволяет забрать собаку из приюта.
      * При этом меняется статус питомца с SHELTER на PROBATION
@@ -136,8 +170,18 @@ public class PetController {
     public Dog takeDogAtHome(Long dogId, Long userId) {
         return petService.takeDogAtHome(dogId, userId);
     }
-
-
+    @Operation(summary = "Поиск владельца Cat в базе данных",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый владелец Cat по идентификатору",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "userCat"
+    )
     /**
      * Контроллеры позволяют найти список кошек, забранных Юзером из приюта
      *
@@ -148,14 +192,13 @@ public class PetController {
     public List<Cat> findCatsByUserId(long userId) {
         return petService.findCatsByUserId(userId);
     }
-
     /**
      * Контроллеры позволяют найти список собак, забранных Юзером из приюта
      *
      * @param userId идентификатор Юзера
      * @return список питомцев
      */
-    @Operation(summary = "Поиск Dog в базе данных по идентификатору владельца",
+    @Operation(summary = "Поиск владельца Dog в базе данных по идентификатору владельца",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
