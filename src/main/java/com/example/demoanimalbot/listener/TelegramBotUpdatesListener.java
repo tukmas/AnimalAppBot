@@ -78,6 +78,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         }
     }
 
+    /**
+     * Метод, который отвечает на вызов команды /start
+     * @param chatId - идентификатор чата, в котором вызвана команда
+     */
     private void sendAfterStart(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(new InlineKeyboardButton("Приют для кошек").callbackData("/cat"),
@@ -89,6 +93,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
+    /**
+     * Метод, который отвечает на нажатие кнопки выбора приюта
+     * @param chatId - идентификатор чата, в котором вызвана команда
+     */
     private void sendAfterDogShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(new InlineKeyboardButton("Информация о приюте").callbackData("/dogInfo"),
@@ -102,7 +110,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
-
+    /**
+     * Метод, который отвечает на нажатие кнопки выбора приюта
+     * @param chatId - идентификатор чата, в котором вызвана команда
+     */
     private void sendAfterCatShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(new InlineKeyboardButton("Информация о приюте").callbackData("/catInfo"),
