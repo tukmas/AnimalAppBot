@@ -44,16 +44,24 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             if (data.equals("/cat")) {
                                 sendAfterCatShelter(update.callbackQuery().from().id());
                             }
-                            if (data.equals("/dog")) {
+                            if (data.equals(String.valueOf(Buttons.DOG))) {
                                 sendAfterDogShelter(update.callbackQuery().from().id());
                             }
                             if (data.equals(String.valueOf(Buttons.CAT_INFO))) {
                                 sendAfterCatInfo(update.callbackQuery().from().id());
                             }
                             if (data.equals(String.valueOf(Buttons.DOG_INFO))) {
-                                sendAfterCatInfo(update.callbackQuery().from().id());
+                                sendAfterDogInfo(update.callbackQuery().from().id());
                             }
-
+                            if (data.equals(String.valueOf(Buttons.TAKE_DOG))) {
+                                adoptDogFromShelter(update.callbackQuery().from().id());
+                            }
+                            if (data.equals(String.valueOf(Buttons.INFO_DOG_SHELTER))) {
+                                InfoDogShelter(update.callbackQuery().from().id());
+                            }
+                            if (data.equals(String.valueOf(Buttons.SAFETY_DOG_SHELTER))) {
+                                SafetyDogShelter(update.callbackQuery().from().id());
+                            }
                         }
                         if (update.message() != null) {
                             Message message = update.message();
@@ -90,7 +98,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void sendAfterStart(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(new InlineKeyboardButton("Приют для кошек").callbackData("/cat"),
-                new InlineKeyboardButton("Приют для собак").callbackData("/dog"));
+                new InlineKeyboardButton(Buttons.DOG.getTitle()).callbackData(String.valueOf(Buttons.DOG)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Привет! Я помогу тебе выбрать питомца. Нажмите кнопку ниже, чтобы перейти в приют, в котором живут кошки или собаки").replyMarkup(keyboardMarkup)
@@ -98,56 +106,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    /**
-     * Метод, который отвечает на нажатие кнопки выбора приюта
-     *
-     * @param chatId - идентификатор чата, в котором вызвана команда
-     */
-    private void sendAfterDogShelter(Long chatId) {
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton("Информация о приюте").callbackData("/dogInfo"),
-                new InlineKeyboardButton("Взять животное из приюта").callbackData("/takeDog"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Прислать отчет о питомце").callbackData("/reportDog"),
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
-        telegramBot.execute(
-                new SendMessage(
-                        chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел").replyMarkup(keyboardMarkup)
-
-        );
-    }
-    private void sendAfterCatInfo(Long chatId) {
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton("Общая информация о приюте").callbackData("/cat2Info"),
-                new InlineKeyboardButton("Контакты").callbackData("/catContact"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Общие рекомендации о технике безопасности на территории приюта").callbackData("/catSafety"),
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
-
-        telegramBot.execute(
-                new SendMessage(
-                        chatId, "Добро пожаловать в приют для кошек. Выберите нужный раздел, чтобы узнать интерисующую Вас информацию").replyMarkup(keyboardMarkup)
-
-        );
-    }
-    private void sendAfterDogInfo(Long chatId) {
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton("Общая информация о приюте").callbackData("/dog2Info"),
-                new InlineKeyboardButton("Контакты").callbackData("/dogContact"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Общие рекомендации о технике безопасности на территории приюта").callbackData("/dogSafety"),
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
-
-        telegramBot.execute(
-                new SendMessage(
-                        chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел, чтобы узнать интерисующую Вас информацию").replyMarkup(keyboardMarkup)
-
-        );
-    }
     /**
      * Метод, который отвечает на нажатие кнопки выбора приюта
      *
@@ -163,6 +121,100 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Добро пожаловать в приют для кошек. Выберите нужный раздел").replyMarkup(keyboardMarkup)
+
+        );
+    }
+    private void sendAfterDogShelter(Long chatId) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+            keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.DOG_INFO.getTitle()).callbackData(String.valueOf(Buttons.DOG_INFO)),
+                new InlineKeyboardButton(Buttons.TAKE_DOG.getTitle()).callbackData(String.valueOf(Buttons.TAKE_DOG)));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Прислать отчет о питомце").callbackData("/reportDog"),
+                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел").replyMarkup(keyboardMarkup)
+        );
+    }
+    private void sendAfterCatInfo(Long chatId) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        keyboardMarkup.addRow(new InlineKeyboardButton("Общая информация о приюте").callbackData("/cat2Info"),
+                new InlineKeyboardButton("Контакты").callbackData("/catContact"));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Общие рекомендации о технике безопасности на территории приюта").callbackData("/catSafety"),
+                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
+
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Добро пожаловать в приют для кошек. Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
+
+        );
+    }
+    /**
+     * Метод, который отвечает на нажатие кнопки выбора приюта
+     *
+     * @param chatId - идентификатор чата, в котором вызвана команда
+     */
+    private void sendAfterDogInfo(Long chatId) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.INFO_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.INFO_DOG_SHELTER.getTitle())),
+                new InlineKeyboardButton("Контакты").callbackData("/dogContact"));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton(Buttons.SAFETY_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.SAFETY_DOG_SHELTER.getTitle())),
+                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
+
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
+
+        );
+    }
+    private void adoptDogFromShelter(Long chatId) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Немецкая овчарка").callbackData("/dogGermanShepherd"),
+                new InlineKeyboardButton("Золотистый ретривер").callbackData("/dogGoldenRetriever"));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Английский бульдог").callbackData("/dogEnglishBulldog"),
+                new InlineKeyboardButton("Бигль").callbackData("/dogBeagle"),
+                new InlineKeyboardButton("Пудель").callbackData("/dogPoodle"));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Выберите породу собаки").replyMarkup(keyboardMarkup)
+
+        );
+    }
+    private void InfoDogShelter(Long chatId) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Вернуться назад").callbackData("/back"));
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Приют для собак — место содержания бездомных, потерянных или брошенных животных." +
+                        " Приюты являются одной из ключевых составляющих защиты животных и выполняют четыре" +
+                        " сновных функции: оперативная помощь и забота о животном, включая облегчение страданий посредством ветеринарной" +
+                        " помощи или эвтаназии; долгосрочная забота о животном, не нашедшем немедленно старого или нового хозяина; усилия по" +
+                        " воссоединению потерянного животного с его прежним хозяином; поиск нового места обитания или нового хозяина для" +
+                        " бездомного животного").replyMarkup(keyboardMarkup)
+
+        );
+    }
+    private void SafetyDogShelter(Long chatId) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Вернуться назад").callbackData("/back"));
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Работники и посетители приюта обязаны соблюдать правила личной гигиены, в том числе" +
+                        " мыть руки с дезинфицирующими средствами после общения с животными. Нахождение на территории в излишне" +
+                        " возбужденном состоянии, а также в состоянии алкогольного, наркотического или медикаментозного опьянения" +
+                        " строго запрещено.").replyMarkup(keyboardMarkup)
 
         );
     }
