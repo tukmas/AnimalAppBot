@@ -1,6 +1,6 @@
-package com.example.demoanimalbot.model.keyboardButtoms;
+package com.example.demoanimalbot.model.keyboardButtons;
 
-public enum Buttoms {
+public enum Buttons {
     /**
      * Для объекта САТ
      */
@@ -25,7 +25,7 @@ public enum Buttoms {
 
     private String title;
 
-    Buttoms(String title) {
+    Buttons(String title) {
         this.title = title;
     }
 

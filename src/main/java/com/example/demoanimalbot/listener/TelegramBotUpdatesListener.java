@@ -1,13 +1,12 @@
 package com.example.demoanimalbot.listener;
 
-import com.example.demoanimalbot.model.keyboardButtoms.Buttoms;
+import com.example.demoanimalbot.model.keyboardButtons.Buttons;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
-import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import org.slf4j.Logger;
@@ -15,10 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
 
 @Component
 public class TelegramBotUpdatesListener implements UpdatesListener {
@@ -51,7 +47,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             if (data.equals("/dog")) {
                                 sendAfterDogShelter(update.callbackQuery().from().id());
                             }
-                            if (data.equals(String.valueOf(Buttoms.CAT_INFO))) {
+                            if (data.equals(String.valueOf(Buttons.CAT_INFO))) {
                                 sendAfterCatInfo(update.callbackQuery().from().id());
                             }
                         }
@@ -139,7 +135,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      */
     private void sendAfterCatShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton(Buttoms.CAT_INFO.getTitle()).callbackData(String.valueOf(Buttoms.CAT_INFO)),
+        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.CAT_INFO.getTitle()).callbackData(String.valueOf(Buttons.CAT_INFO)),
                 new InlineKeyboardButton("Взять животное из приюта").callbackData("/takeCat"));
         keyboardMarkup.addRow(
                 new InlineKeyboardButton("Прислать отчет о питомце").callbackData("/reportCat"),
