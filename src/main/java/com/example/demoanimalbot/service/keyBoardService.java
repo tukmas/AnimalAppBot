@@ -1,15 +1,13 @@
 package com.example.demoanimalbot.service;
 
-import com.example.demoanimalbot.model.keyboardButtoms.Buttoms;
-
-import java.util.Map;
+import com.example.demoanimalbot.model.keyboardButtons.Buttons;
 
 public class keyBoardService {
-    private Buttoms buttoms;
+    private Buttons buttons;
 
 
-    public keyBoardService(Buttoms buttoms) {
-        this.buttoms = buttoms;
+    public keyBoardService(Buttons buttons) {
+        this.buttons = buttons;
     }
 
 
