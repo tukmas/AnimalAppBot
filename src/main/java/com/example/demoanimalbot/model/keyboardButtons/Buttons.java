@@ -23,7 +23,8 @@ public enum Buttons {
     REPORT_DOG("Прислать отчет о питомце"),
     INFO_DOG_SHELTER("Общая информация о приюте"),
     SAFETY_DOG_SHELTER("Общие рекомендации по технике безопасности"),
-    HELP_DOG("Вызвать волонтера");
+    HELP_DOG("Вызвать волонтера"),
+    BACK_DOG("Вернуться назад");
 
     private String title;
 

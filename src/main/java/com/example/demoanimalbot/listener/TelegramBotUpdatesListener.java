@@ -62,6 +62,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             if (data.equals(String.valueOf(Buttons.SAFETY_DOG_SHELTER))) {
                                 SafetyDogShelter(update.callbackQuery().from().id());
                             }
+                            if (data.equals(String.valueOf(Buttons.BACK_DOG))) {
+                                sendAfterDogInfo(update.callbackQuery().from().id());
+                            }
                         }
                         if (update.message() != null) {
                             Message message = update.message();
@@ -126,7 +129,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     }
     private void sendAfterDogShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-            keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.DOG_INFO.getTitle()).callbackData(String.valueOf(Buttons.DOG_INFO)),
+         keyboardMarkup.addRow(
+                new InlineKeyboardButton(Buttons.DOG_INFO.getTitle()).callbackData(String.valueOf(Buttons.DOG_INFO)),
                 new InlineKeyboardButton(Buttons.TAKE_DOG.getTitle()).callbackData(String.valueOf(Buttons.TAKE_DOG)));
         keyboardMarkup.addRow(
                 new InlineKeyboardButton("Прислать отчет о питомце").callbackData("/reportDog"),
@@ -159,17 +163,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      */
     private void sendAfterDogInfo(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.INFO_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.INFO_DOG_SHELTER.getTitle())),
-                new InlineKeyboardButton("Контакты").callbackData("/dogContact"));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.SAFETY_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.SAFETY_DOG_SHELTER.getTitle())),
+                new InlineKeyboardButton(Buttons.INFO_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.INFO_DOG_SHELTER)),
+                new InlineKeyboardButton(Buttons.SAFETY_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.SAFETY_DOG_SHELTER)));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton("Контакты").callbackData("/dogContact"),
                 new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
         keyboardMarkup.addRow(
                 new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
 
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
+                        chatId, "Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
 
         );
     }
@@ -193,7 +198,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void InfoDogShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton("Вернуться назад").callbackData("/back"));
+                new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Приют для собак — место содержания бездомных, потерянных или брошенных животных." +
@@ -208,7 +213,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void SafetyDogShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton("Вернуться назад").callbackData("/back"));
+                new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Работники и посетители приюта обязаны соблюдать правила личной гигиены, в том числе" +
@@ -218,4 +223,5 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
+
 }
