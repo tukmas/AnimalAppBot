@@ -9,7 +9,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
-import java.time.LocalDate;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -17,40 +16,32 @@ import java.util.Objects;
 @Setter
 @Getter
 @MappedSuperclass
-public abstract class Pet {
+public abstract class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
     private String name;
-    private int age;
-    private String breed;
-    private String description;
-    private Status status;
-    private LocalDate dateOfAdoption;
+    private long chatId;
+    private String email;
+    private String phoneNumber;
 
-    public Pet(String name, int age, String breed) {
+    public User(String name, String email, String phoneNumber) {
         this.name = name;
-        this.age = age;
-        this.breed = breed;
-        this.status = Status.SHELTER;
-    }
-
-    public Pet(long id, String name, int age) {
-        this.id = id;
-        this.name = name;
-        this.age = age;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Pet pet = (Pet) o;
-        return id == pet.id;
+        User user = (User) o;
+        return Objects.equals(email, user.email) && Objects.equals(phoneNumber, user.phoneNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(email, phoneNumber);
     }
 }

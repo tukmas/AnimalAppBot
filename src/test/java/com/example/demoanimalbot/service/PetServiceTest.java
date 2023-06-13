@@ -49,7 +49,7 @@ class PetServiceTest {
 
     @Test
     void findCat() {
-        Cat cat = new Cat(1,"dd",1,"22","ww", Status.HOME, LocalDate.now(),null);
+        Cat cat = new Cat(1,"b",1);
         when(catRepositoryMock.findById(1l))
                 .thenReturn(Optional.of(cat));
         assertEquals(out.findCat(1l), Optional.of(cat));
