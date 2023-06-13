@@ -1,4 +1,4 @@
-package com.example.demoanimalbot.model;
+package com.example.demoanimalbot.model.pets;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

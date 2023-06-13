@@ -1,12 +1,10 @@
-package com.example.demoanimalbot.model;
+package com.example.demoanimalbot.model.users;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.util.List;
 
 /**
  * Класс для объектов, которые берут
@@ -17,7 +15,7 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
-public class UserCat extends User{
+public class UserCat extends User {
 
     public UserCat(String name, String email, String phoneNumber) {
         super(name, email, phoneNumber);

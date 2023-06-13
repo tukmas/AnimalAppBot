@@ -1,13 +1,12 @@
-package com.example.demoanimalbot.model;
+package com.example.demoanimalbot.model.pets;
 
+import com.example.demoanimalbot.model.users.UserDog;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.time.LocalDate;
-import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor

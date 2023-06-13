@@ -1,4 +1,4 @@
-package com.example.demoanimalbot.model;
+package com.example.demoanimalbot.model.reports;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Setter
 @Getter
-@Entity
-public class CatReport {
+@MappedSuperclass
+public abstract class Reports {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -23,7 +23,4 @@ public class CatReport {
     private LocalDateTime sendDate;
     @OneToOne
     private Photo photo;
-    @ManyToOne
-    private Cat cat;
-
 }

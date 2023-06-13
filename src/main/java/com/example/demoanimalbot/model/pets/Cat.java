@@ -1,10 +1,9 @@
-package com.example.demoanimalbot.model;
+package com.example.demoanimalbot.model.pets;
 
+import com.example.demoanimalbot.model.users.UserCat;
 import lombok.*;
 
 import javax.persistence.*;
-import java.time.LocalDate;
-import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor
