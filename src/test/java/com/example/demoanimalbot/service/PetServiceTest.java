@@ -1,7 +1,7 @@
 package com.example.demoanimalbot.service;
 
-import com.example.demoanimalbot.model.Cat;
-import com.example.demoanimalbot.model.Status;
+import com.example.demoanimalbot.model.pets.Cat;
+import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.repository.CatRepository;
 import com.example.demoanimalbot.repository.DogRepository;
 import com.example.demoanimalbot.repository.UserCatRepository;
@@ -11,9 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
-import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +23,7 @@ class PetServiceTest {
     @Mock
     private CatRepository catRepositoryMock;
     @Mock
-    private DogRepository dogRepository;
+    private DogRepository dogRepositoryMock;
     @Mock
     private UserCatRepository userCatRepository;
     @Mock
@@ -44,12 +42,18 @@ class PetServiceTest {
     }
 
     @Test
-    void createDog() {}
+    void createDog() {
+        Dog dog = new Dog("a", 1,"b");
+        when(dogRepositoryMock.save(dog))
+                .thenReturn(dog);
+        assertEquals(out.createDog("a", 1,"b"), dog);
+        verify(dogRepositoryMock, times(1)).save(new Dog("a", 1,"b"));
+    }
 
 
     @Test
     void findCat() {
-        Cat cat = new Cat(1,"dd",1,"22","ww", Status.HOME, LocalDate.now(),null);
+        Cat cat = new Cat(1,"b",1);
         when(catRepositoryMock.findById(1l))
                 .thenReturn(Optional.of(cat));
         assertEquals(out.findCat(1l), Optional.of(cat));
@@ -58,10 +62,16 @@ class PetServiceTest {
 
     @Test
     void findDog() {
+        Dog dog = new Dog(1,"b",1);
+        when(dogRepositoryMock.findById(1l))
+                .thenReturn(Optional.of(dog));
+        assertEquals(out.findDog(1l), Optional.of(dog));
+        verify(dogRepositoryMock, times(1)).findById(1l);
     }
 
     @Test
     void takeCatAtHome() {
+
     }
 
     @Test
@@ -70,6 +80,7 @@ class PetServiceTest {
 
     @Test
     void findCatsByUserId() {
+
     }
 
     @Test
