@@ -16,6 +16,10 @@ import javax.persistence.*;
 @Getter
 @Entity
 public class UserDog extends User {
+    public UserDog(String name, long chatId) {
+        super(name, chatId);
+    }
+
     public UserDog(String name, String email, String phoneNumber) {
         super(name, email, phoneNumber);
     }

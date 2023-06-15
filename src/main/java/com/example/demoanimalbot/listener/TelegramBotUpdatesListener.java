@@ -1,6 +1,14 @@
 package com.example.demoanimalbot.listener;
 
 import com.example.demoanimalbot.model.keyboardButtons.Buttons;
+import com.example.demoanimalbot.model.pets.Dog;
+import com.example.demoanimalbot.model.pets.Pet;
+import com.example.demoanimalbot.model.reports.DogReport;
+import com.example.demoanimalbot.model.users.AnswerStatus;
+import com.example.demoanimalbot.model.users.UserDog;
+import com.example.demoanimalbot.repository.DogReportRepository;
+import com.example.demoanimalbot.repository.DogRepository;
+import com.example.demoanimalbot.repository.UserDogRepository;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Message;
@@ -14,16 +22,27 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private final TelegramBot telegramBot;
+    private final UserDogRepository userDogRepository;
+    private final DogRepository dogRepository;
+    private final Map<Long, AnswerStatus> statusMap = new HashMap<>();
+    private final DogReport dogReport = new DogReport();
+    private final DogReportRepository dogReportRepository;
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserDogRepository userDogRepository, DogRepository dogRepository, DogReportRepository dogReportRepository) {
         this.telegramBot = telegramBot;
+        this.userDogRepository = userDogRepository;
+        this.dogRepository = dogRepository;
+        this.dogReportRepository = dogReportRepository;
     }
 
     @PostConstruct
@@ -55,6 +74,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             }
                             if (data.equals(String.valueOf(Buttons.TAKE_DOG))) {
                                 adoptDogFromShelter(update.callbackQuery().from().id());
+                            }
+                            if (data.equals(String.valueOf(Buttons.REPORT_DOG))) {
+                                sendDogReport(update);
                             }
 
 //                            2 Этап
@@ -113,8 +135,47 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             Message message = update.message();
                             Long chatId = message.chat().id();
                             String text = message.text();
-                            Long userId = message.from().id();
+                            //Long userId = message.from().id();
+                            AnswerStatus status = statusMap.get(chatId);
 
+                            if (status != null) {
+
+                                switch (status) {
+                                    case SEND_PET_NAME -> {
+                                        Dog dog = dogRepository.findByUserChatIdAndName(chatId, text);
+                                        if (dog != null) {
+                                            dogReport.setSendDate(LocalDateTime.now());
+                                            dogReport.setDog(dog);
+                                            statusMap.put(chatId, AnswerStatus.SEND_DIET);
+                                            telegramBot.execute(
+                                                    new SendMessage(chatId, "Опишите рацион питомца")
+                                            );
+                                        }
+                                    }
+                                    case SEND_DIET -> {
+                                        dogReport.setDiet(text);
+                                        statusMap.put(chatId, AnswerStatus.SEND_WELLBEING);
+                                        telegramBot.execute(
+                                                new SendMessage(chatId, "Опишите общее самочувствие и привыкание к новому месту")
+                                        );
+                                    }
+                                    case SEND_WELLBEING -> {
+                                        dogReport.setWellBeing(text);
+                                        statusMap.put(chatId, AnswerStatus.SEND_BEHAVIOR);
+                                        telegramBot.execute(
+                                                new SendMessage(chatId, "Опишите изменение в поведении, например, отказ от старых привычек, приобретение новых")
+                                        );
+                                    }
+                                    case SEND_BEHAVIOR -> {
+                                        dogReport.setBehavior(text);
+                                        dogReportRepository.save(dogReport);
+                                        telegramBot.execute(
+                                                new SendMessage(chatId, "Спасибо. Ваш отчет отправлен на проверку волонтеру.")
+                                        );
+                                        statusMap.remove(chatId);
+                                    }
+                                }
+                            }
 
                             if ("/start".equals(text)) {
                                 sendAfterStart(chatId);
@@ -134,6 +195,29 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         if (!sendResponse.isOk()) {
             logger.error("Error during sending message: {}", sendResponse.description());
         }
+    }
+
+    /**
+     * Метод, который отвечает на нажатие кнопки отправить отчет для Dog
+     */
+
+    //Фото животного.
+    //Рацион животного.
+    //Общее самочувствие и привыкание к новому месту.
+    //Изменение в поведении: отказ от старых привычек, приобретение новых.
+    private void sendDogReport(Update update) {
+        Long chatId = update.callbackQuery().from().id();
+        String userName = update.callbackQuery().from().firstName();
+        try {
+            UserDog user = userDogRepository.findByChatId(chatId);
+            statusMap.put(chatId, AnswerStatus.SEND_PET_NAME);
+        } catch (NullPointerException e) {
+            UserDog user = new UserDog(userName, chatId);
+            statusMap.put(chatId, AnswerStatus.SEND_PET_NAME);
+            userDogRepository.save(user);
+        }
+        telegramBot.execute(new SendMessage(chatId, "Напишите имя питомца"));
+
     }
 
     /**
@@ -170,19 +254,21 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
+
     private void sendAfterDogShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-         keyboardMarkup.addRow(
+        keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.DOG_INFO.getTitle()).callbackData(String.valueOf(Buttons.DOG_INFO)),
                 new InlineKeyboardButton(Buttons.TAKE_DOG.getTitle()).callbackData(String.valueOf(Buttons.TAKE_DOG)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton("Прислать отчет о питомце").callbackData("/reportDog"),
+                new InlineKeyboardButton(Buttons.REPORT_DOG.getTitle()).callbackData(String.valueOf(Buttons.REPORT_DOG)),
                 new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел").replyMarkup(keyboardMarkup)
         );
     }
+
     private void sendAfterCatInfo(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(new InlineKeyboardButton("Общая информация о приюте").callbackData("/cat2Info"),
@@ -199,6 +285,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
+
     /**
      * Метод, который отвечает на нажатие кнопки выбора приюта
      *
@@ -226,6 +313,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
+
     private void adoptDogFromShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -272,6 +360,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
+
     private void OpeningDirectionsDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -280,26 +369,28 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 new SendMessage(
                         chatId,
                         "Понедельник  7:00 — 20:00\n" +
-                        "Вторник  7:00 — 20:00\n" +
-                        "Среда  7:00 — 20:00\n" +
-                        "Четверг  7:00 — 20:00\n" +
-                        "Пятница  7:00 — 20:00\n" +
-                        "Суббота  7:00 — 20:00\n" +
-                        "Воскресенье  Выходной\n" +
-                        "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.").replyMarkup(keyboardMarkup)
+                                "Вторник  7:00 — 20:00\n" +
+                                "Среда  7:00 — 20:00\n" +
+                                "Четверг  7:00 — 20:00\n" +
+                                "Пятница  7:00 — 20:00\n" +
+                                "Суббота  7:00 — 20:00\n" +
+                                "Воскресенье  Выходной\n" +
+                                "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.").replyMarkup(keyboardMarkup)
         );
     }
+
     private void contactPassForTheCarDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
         telegramBot.execute(
                 new SendMessage(
-                        chatId,"Пункт охраны:\n" +
-                                "Телефон: 8-(912)-***-**-**\n" +
-                                "Для оформления пропуска на автомобиль\n ").replyMarkup(keyboardMarkup)
+                        chatId, "Пункт охраны:\n" +
+                        "Телефон: 8-(912)-***-**-**\n" +
+                        "Для оформления пропуска на автомобиль\n ").replyMarkup(keyboardMarkup)
         );
     }
+
     private void SafetyDogShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -345,6 +436,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void RequiredDocumentsDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -360,6 +452,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void TransportRecommendationsDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -379,6 +472,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void HouseForThePuppyRecommendationDOg(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -401,6 +495,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void HouseForAdultAnimalRecommendationDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -437,6 +532,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void HouseForAnimalWithDisabilitiesRecomendationDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -472,6 +568,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void CynologistAdviceDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -485,49 +582,50 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                         " Кинологи рекомендуют начинать обучение с 8-и месяцев. С этого возраста собака воспринимает команды хозяина без ущерба для собственной" +
                         " психики. До 8-ми месяцев щенка нужно не учить, а воспитывать." +
                         "Обязательная экипировка:\n" +
-                                "\n" +
-                                "Поводок\n" +
-                                "Ошейник\n" +
-                                "Намордник\n" +
-                                "Вода! Вы же не забываете брать воду, когда идёте в спортзал? Вот и ваш любимец может захотеть попить.\n" +
-                                "Лакомства\n" +
-                                "Сумочка для лакомств (зачем, расскажем чуть позже)." +
+                        "\n" +
+                        "Поводок\n" +
+                        "Ошейник\n" +
+                        "Намордник\n" +
+                        "Вода! Вы же не забываете брать воду, когда идёте в спортзал? Вот и ваш любимец может захотеть попить.\n" +
+                        "Лакомства\n" +
+                        "Сумочка для лакомств (зачем, расскажем чуть позже)." +
                         "2. Готовимся покорять интеллектуальный олимп вместе\n" +
                         "Способ поощрения: Перед тем, как начать покорять вершины мировой дрессировки, выберете метод, которым будете поощрять своего питомца." +
-                                " Сделать это будет не сложно, ибо их всего два:\n" +
-                                "Поощрение игрушкой\n" +
-                                "Поощрение лакомствами\n" +
-                                "Для того, чтобы у собаки была мотивация в получении лакомства, перед тренировкой пропустите один приём пищи. Так собачка захочет" +
-                                " получить лакомство ещё сильнее.Мы рассмотрим последний вариант: он наиболее эффективный. Из списка вкусняшек мы сразу исключаем:" +
-                                " сосиски, колбасу, сыр и прочие жирные продукты. Всё вышеперечисленное может изрядно подкосить здоровье вашего любимца, чего мы," +
-                                " естественно, не хотим. А теперь о том, почему поясная сумочка для лакомств — это важно. Один из основных принципов " +
-                                "дрессировки — поощрять собаку СРАЗУ после того, как она выполнила команду. Тобишь, когда Тузик принёс мячик, он должен получить свою" +
-                                " заслуженную вкусняшку, а не ждать пока вы перевернёте все сумочки, пакеты, карманы в поисках лакомства. Пока вы, наконец, найдёте то," +
-                                " что нужно, собака и вовсе забудет, за что её похвалили. Помните, лакомство должно быть маленьким! Иначе животное отвлечётся от процесса" +
-                                " тренировки. Выбор места: Новичкам лучше всего начинать с квартиры. Там и раздражителей поменьше, и обстановка для питомца максимально " +
-                                "знакомая. По мере усвоения, можете перейти на собачьи площадки и улицу. Важно! Всё время менять локацию! Если вы тренируете собаку только дома," +
-                                " выполнять команду на улице она не станет.\n" +
+                        " Сделать это будет не сложно, ибо их всего два:\n" +
+                        "Поощрение игрушкой\n" +
+                        "Поощрение лакомствами\n" +
+                        "Для того, чтобы у собаки была мотивация в получении лакомства, перед тренировкой пропустите один приём пищи. Так собачка захочет" +
+                        " получить лакомство ещё сильнее.Мы рассмотрим последний вариант: он наиболее эффективный. Из списка вкусняшек мы сразу исключаем:" +
+                        " сосиски, колбасу, сыр и прочие жирные продукты. Всё вышеперечисленное может изрядно подкосить здоровье вашего любимца, чего мы," +
+                        " естественно, не хотим. А теперь о том, почему поясная сумочка для лакомств — это важно. Один из основных принципов " +
+                        "дрессировки — поощрять собаку СРАЗУ после того, как она выполнила команду. Тобишь, когда Тузик принёс мячик, он должен получить свою" +
+                        " заслуженную вкусняшку, а не ждать пока вы перевернёте все сумочки, пакеты, карманы в поисках лакомства. Пока вы, наконец, найдёте то," +
+                        " что нужно, собака и вовсе забудет, за что её похвалили. Помните, лакомство должно быть маленьким! Иначе животное отвлечётся от процесса" +
+                        " тренировки. Выбор места: Новичкам лучше всего начинать с квартиры. Там и раздражителей поменьше, и обстановка для питомца максимально " +
+                        "знакомая. По мере усвоения, можете перейти на собачьи площадки и улицу. Важно! Всё время менять локацию! Если вы тренируете собаку только дома," +
+                        " выполнять команду на улице она не станет.\n" +
                         "3. Как сделать так, чтобы для питомца дрессировка стала самым лакомым моментом?\n" +
-                                "5 простых правил, как сделать дрессировку весёлой для вас и вашего питомца:\n" +
-                                "1. Очень, ОЧЕНЬ много хвалить и поощрять собаку на первых порах. Первые тренировки — не что иное, как конфетно-букетный период. Комплименты," +
-                                " восхищение, угощения — делайте всё, чтобы собака чувствовала себя лучшим существом на планете. А чтобы хозяин возводил её на небеса, всего-то " +
-                                "надо принести мячик и прижать свою попу по команде.\n" +
-                                "2. Делать перерывы по 5-10 минут. Не забывайте, что собака — живое существо. Как и у нас, от переизбытка информации у пёселей плавится мозг." +
-                                " Во время отдыха не тревожьте животинку, пусть питомец поделает то, что ему хочется. Как только собака привыкнет к интеллектуальным нагрузкам, " +
-                                "вы сможете сокращать перерывы. Но первый месяц пёсель должен отдыхать как минимум 10-20 минут за тренировку.\n" +
-                                "3. Не очеловечивайте животное и не злитесь, если питомец вас не понимает. Да, собака — лучший друг человека, но от этого она не перестаёт быть СОБАКОЙ." +
-                                " Другим биологическим видом! Сами по себе слова «сидеть», «лежать» и «апорт» для вашего питомца пустые звуки. Собакен ассоциирует команду с конкретным" +
-                                " действием только после длительных тренировок. Сами подумайте, если бы ваш пёсель понимал человеческий, к чему бы были нужны все эти дрессировки?" +
-                                "Твой пёсель, когда ты пытаешься ему объяснить команду.\n" +
-                                "4. Быть на позитиве! За тысячелетнее соседство с человеком, собаки научились отлично понимать настроение своего хозяина по тону голоса, жестам," +
-                                " мимике. Если вы приступили к занятиям с угрюмым настроением, с вероятностью 99,9% ничего не получится. Пёсель, как и вы, захочет поскорее" +
-                                " закончить тренировку. Поэтому очень важно получать от процесса неподдельный кайф. Наслаждайтесь общением с вашим любимцем, вашими успехами, свежим воздухом.\n" +
-                                "5. Самое главное, сделайте так, чтобы собаке ХОТЕЛОСЬ возвращаться к занятиям. Нельзя, чтобы тренировка превращалась для собаки в каторгу, куда её ведут волоком" +
-                                " и заставляют насильно выполнять то, что ей не нравится. Тренировка должна быть наполнена лакомыми моментами. Общение с хозяином, вкусняшки, похвала — это ли не" +
-                                " рай для любого питомца?"
+                        "5 простых правил, как сделать дрессировку весёлой для вас и вашего питомца:\n" +
+                        "1. Очень, ОЧЕНЬ много хвалить и поощрять собаку на первых порах. Первые тренировки — не что иное, как конфетно-букетный период. Комплименты," +
+                        " восхищение, угощения — делайте всё, чтобы собака чувствовала себя лучшим существом на планете. А чтобы хозяин возводил её на небеса, всего-то " +
+                        "надо принести мячик и прижать свою попу по команде.\n" +
+                        "2. Делать перерывы по 5-10 минут. Не забывайте, что собака — живое существо. Как и у нас, от переизбытка информации у пёселей плавится мозг." +
+                        " Во время отдыха не тревожьте животинку, пусть питомец поделает то, что ему хочется. Как только собака привыкнет к интеллектуальным нагрузкам, " +
+                        "вы сможете сокращать перерывы. Но первый месяц пёсель должен отдыхать как минимум 10-20 минут за тренировку.\n" +
+                        "3. Не очеловечивайте животное и не злитесь, если питомец вас не понимает. Да, собака — лучший друг человека, но от этого она не перестаёт быть СОБАКОЙ." +
+                        " Другим биологическим видом! Сами по себе слова «сидеть», «лежать» и «апорт» для вашего питомца пустые звуки. Собакен ассоциирует команду с конкретным" +
+                        " действием только после длительных тренировок. Сами подумайте, если бы ваш пёсель понимал человеческий, к чему бы были нужны все эти дрессировки?" +
+                        "Твой пёсель, когда ты пытаешься ему объяснить команду.\n" +
+                        "4. Быть на позитиве! За тысячелетнее соседство с человеком, собаки научились отлично понимать настроение своего хозяина по тону голоса, жестам," +
+                        " мимике. Если вы приступили к занятиям с угрюмым настроением, с вероятностью 99,9% ничего не получится. Пёсель, как и вы, захочет поскорее" +
+                        " закончить тренировку. Поэтому очень важно получать от процесса неподдельный кайф. Наслаждайтесь общением с вашим любимцем, вашими успехами, свежим воздухом.\n" +
+                        "5. Самое главное, сделайте так, чтобы собаке ХОТЕЛОСЬ возвращаться к занятиям. Нельзя, чтобы тренировка превращалась для собаки в каторгу, куда её ведут волоком" +
+                        " и заставляют насильно выполнять то, что ей не нравится. Тренировка должна быть наполнена лакомыми моментами. Общение с хозяином, вкусняшки, похвала — это ли не" +
+                        " рай для любого питомца?"
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void ListOfVerifiedCatenorsDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
@@ -542,6 +640,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
     private void ReasonsForRefusalDog(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(

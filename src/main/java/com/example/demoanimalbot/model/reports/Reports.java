@@ -1,9 +1,7 @@
 package com.example.demoanimalbot.model.reports;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.example.demoanimalbot.model.pets.Pet;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -13,6 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @MappedSuperclass
+@EqualsAndHashCode
 public abstract class Reports {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,4 +22,10 @@ public abstract class Reports {
     private LocalDateTime sendDate;
     @OneToOne
     private Photo photo;
+
+
+
+    public Reports(LocalDateTime sendDate) {
+        this.sendDate = sendDate;
+    }
 }
