@@ -4,6 +4,7 @@ import com.example.demoanimalbot.model.keyboardButtons.Buttons;
 import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.model.pets.Pet;
 import com.example.demoanimalbot.model.reports.DogReport;
+import com.example.demoanimalbot.model.reports.Photo;
 import com.example.demoanimalbot.model.users.AnswerStatus;
 import com.example.demoanimalbot.model.users.UserDog;
 import com.example.demoanimalbot.repository.DogReportRepository;
@@ -11,10 +12,13 @@ import com.example.demoanimalbot.repository.DogRepository;
 import com.example.demoanimalbot.repository.UserDogRepository;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
+import com.pengrad.telegrambot.model.File;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.request.GetFile;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import org.slf4j.Logger;
@@ -23,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,6 +136,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             }
 
                         }
+                        /**
+                        if (update.message().photo() != null) {
+                            Long chatId = update.message().from().id();
+                            if (statusMap.get(chatId).equals(AnswerStatus.SEND_FOTO)) {
+                            }
+                        }
+                        */
                         if (update.message() != null) {
                             Message message = update.message();
                             Long chatId = message.chat().id();
@@ -150,6 +162,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Опишите рацион питомца")
                                             );
+                                        } else {
+                                            telegramBot.execute(
+                                                    new SendMessage(chatId, "Питомец с таким именем не найден. Попробуйте еще раз или выберите пункт Меню."));
                                         }
                                     }
                                     case SEND_DIET -> {
@@ -178,6 +193,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             }
 
                             if ("/start".equals(text)) {
+                                statusMap.remove(chatId);
                                 sendAfterStart(chatId);
                             }
                         }

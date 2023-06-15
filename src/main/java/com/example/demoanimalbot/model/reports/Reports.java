@@ -1,6 +1,7 @@
 package com.example.demoanimalbot.model.reports;
 
 import com.example.demoanimalbot.model.pets.Pet;
+import com.pengrad.telegrambot.model.PhotoSize;
 import lombok.*;
 
 import javax.persistence.*;
@@ -20,6 +21,7 @@ public abstract class Reports {
     private String behavior;
     private String wellBeing;
     private LocalDateTime sendDate;
+
     @OneToOne
     private Photo photo;
 

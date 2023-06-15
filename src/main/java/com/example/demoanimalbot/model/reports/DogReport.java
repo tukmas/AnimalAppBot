@@ -1,6 +1,9 @@
 package com.example.demoanimalbot.model.reports;
 
 import com.example.demoanimalbot.model.pets.Dog;
+import com.pengrad.telegrambot.model.File;
+import com.pengrad.telegrambot.model.PhotoSize;
+import com.pengrad.telegrambot.request.GetFile;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,6 +11,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,4 +27,7 @@ public class DogReport extends Reports {
         super(sendDate);
         this.dog = dog;
     }
-}
+
+
+    }
+
