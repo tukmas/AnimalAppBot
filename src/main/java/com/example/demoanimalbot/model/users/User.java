@@ -25,6 +25,12 @@ public abstract class User {
     private long chatId;
     private String email;
     private String phoneNumber;
+    private AnswerStatus status;
+
+    public User(String name, long chatId) {
+        this.name = name;
+        this.chatId = chatId;
+    }
 
     public User(String name, String email, String phoneNumber) {
         this.name = name;
