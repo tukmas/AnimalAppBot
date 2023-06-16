@@ -16,6 +16,9 @@ import javax.persistence.*;
 @Getter
 @Entity
 public class UserCat extends User {
+    public UserCat(String name, long chatId) {
+        super(name, chatId);
+    }
 
     public UserCat(String name, String email, String phoneNumber) {
         super(name, email, phoneNumber);
