@@ -6,14 +6,6 @@ public enum Buttons {
      */
     CAT("Приют для кошек"),
 
-    TAKE_CAT("Взять питомца из приюта"),
-    REPORT_CAT("Прислать отчет о питомце"),
-    HELP_CAT("Вызвать волонтера"),
-
-
-
-
-
     /**
      * Для объекта DOG
      */
@@ -30,16 +22,16 @@ public enum Buttons {
     CONTACTS_FOR_COMMUNICATION("Оставить свои контакты для связи."),
     BACK("Вернуться назад"),
     // 3 Этап
-    INTRODUCING("Знакомство с собаками."),
+    INTRODUCING("Знакомство с питомцем."),
     REQUIRED_DOCUMENTS("Необходимые документы."),
     TRANSPORT_RECOMMENDATIONS("Рекомендаций по транспортировке."),
-    HOUSE_FOR_THE_PUPPY_RECOMMENDATION_DOG("Дом для щенка. Рекомендации."),
+    HOUSE_FOR_THE_PUPPY_RECOMMENDATION("Дом для маленького питомца. Рекомендации."),
     HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION("Дом для взрослого животного. Рекомендации."),
     HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION("Дом для животного с ограниченными возможностями. Рекомендации."),
     CYNOLOGIST_ADVICE_DOG("Советы кинолога."),
     LIST_OF_VERIFIED_CATENORS_DOG("Список проверенных кинологов."),
     REASONS_FOR_REFUSAL("Причины отказа."),
-    CONTACTS("Контакт"),
+    CONTACTS("Контакты"),
     BACK1("Вернуться назад");
 
     private String title;
