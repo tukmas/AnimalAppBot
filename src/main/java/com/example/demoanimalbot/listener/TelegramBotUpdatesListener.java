@@ -85,7 +85,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             }
 
                             if (data.equals(String.valueOf(Buttons.SHELTER_INFO))) {
-                                sendAfterPetInfo(update.callbackQuery().from().id(), markMap.get(chatId));
+                                sendAfterPetInfo(update.callbackQuery().from().id());
                             }
                             if (data.equals(String.valueOf(Buttons.TAKE_PET))) {
                                 adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
@@ -109,7 +109,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 SafetyShelter(update.callbackQuery().from().id());
                             }
                             if (data.equals(String.valueOf(Buttons.BACK))) {
-                                sendAfterPetInfo(update.callbackQuery().from().id(), markMap.get(chatId));
+                                sendAfterPetInfo(update.callbackQuery().from().id());
                             }
 
 //                            3 Этап
@@ -293,7 +293,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      *
      * @param chatId - идентификатор чата, в котором вызвана команда
      */
-    private void sendAfterPetInfo(Long chatId, ShelterMark shelterMark) {
+    private void sendAfterPetInfo(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.INFO_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.INFO_SHELTER)));
