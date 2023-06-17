@@ -2,23 +2,21 @@ package com.example.demoanimalbot.listener;
 
 import com.example.demoanimalbot.model.keyboardButtons.Buttons;
 import com.example.demoanimalbot.model.pets.Dog;
-import com.example.demoanimalbot.model.pets.Pet;
 import com.example.demoanimalbot.model.reports.DogReport;
-import com.example.demoanimalbot.model.reports.Photo;
 import com.example.demoanimalbot.model.users.AnswerStatus;
+import com.example.demoanimalbot.model.users.ShelterMark;
+import com.example.demoanimalbot.model.users.UserCat;
 import com.example.demoanimalbot.model.users.UserDog;
 import com.example.demoanimalbot.repository.DogReportRepository;
 import com.example.demoanimalbot.repository.DogRepository;
+import com.example.demoanimalbot.repository.UserCatRepository;
 import com.example.demoanimalbot.repository.UserDogRepository;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
-import com.pengrad.telegrambot.model.File;
 import com.pengrad.telegrambot.model.Message;
-import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
-import com.pengrad.telegrambot.request.GetFile;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import org.slf4j.Logger;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,15 +34,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private final TelegramBot telegramBot;
     private final UserDogRepository userDogRepository;
+    private final UserCatRepository userCatRepository;
     private final DogRepository dogRepository;
     private final Map<Long, AnswerStatus> statusMap = new HashMap<>();
+    private final Map<Long, ShelterMark> markMap = new HashMap<>();
     private final DogReport dogReport = new DogReport();
     private final DogReportRepository dogReportRepository;
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserDogRepository userDogRepository, DogRepository dogRepository, DogReportRepository dogReportRepository) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserDogRepository userDogRepository, UserCatRepository userCatRepository, DogRepository dogRepository, DogReportRepository dogReportRepository) {
         this.telegramBot = telegramBot;
         this.userDogRepository = userDogRepository;
+        this.userCatRepository = userCatRepository;
         this.dogRepository = dogRepository;
         this.dogReportRepository = dogReportRepository;
     }
@@ -65,84 +65,94 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                         if (update.callbackQuery() != null) {
                             String data = update.callbackQuery().data();
-                            if (data.equals("/cat")) {
-                                sendAfterCatShelter(update.callbackQuery().from().id());
+                            Long chatId = update.callbackQuery().from().id();
+                            String userName = update.callbackQuery().from().firstName();
+                            if (data.equals(String.valueOf(Buttons.CAT))) {
+                                if (userCatRepository.findByChatId(chatId) == null) {
+                                    UserCat user = new UserCat(userName, chatId);
+                                    userCatRepository.save(user);
+                                }
+                                markMap.put(chatId, ShelterMark.CAT_SHELTER);
+                                sendAfterPetShelter(chatId, ShelterMark.CAT_SHELTER);
                             }
                             if (data.equals(String.valueOf(Buttons.DOG))) {
-                                sendAfterDogShelter(update.callbackQuery().from().id());
+                                if (userDogRepository.findByChatId(chatId) == null) {
+                                    UserDog user = new UserDog(userName, chatId);
+                                    userDogRepository.save(user);
+                                }
+                                markMap.put(chatId, ShelterMark.DOG_SHELTER);
+                                sendAfterPetShelter(chatId, ShelterMark.DOG_SHELTER);
                             }
-                            if (data.equals(String.valueOf(Buttons.CAT_INFO))) {
-                                sendAfterCatInfo(update.callbackQuery().from().id());
+
+                            if (data.equals(String.valueOf(Buttons.SHELTER_INFO))) {
+                                sendAfterPetInfo(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.DOG_INFO))) {
-                                sendAfterDogInfo(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.TAKE_PET))) {
+                                adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.TAKE_DOG))) {
-                                adoptDogFromShelter(update.callbackQuery().from().id());
-                            }
-                            if (data.equals(String.valueOf(Buttons.REPORT_DOG))) {
-                                sendDogReport(update);
+                            if (data.equals(String.valueOf(Buttons.REPORT))) {
+                                sendDogReport(update, markMap.get(chatId));
                             }
 
 //                            2 Этап
 
-                            if (data.equals(String.valueOf(Buttons.INFO_DOG_SHELTER))) {
-                                InfoDogShelter(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.INFO_SHELTER))) {
+                                InfoPetShelter(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.OPENING_DIRECTIONS_DOG))) {
-                                OpeningDirectionsDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.OPENING_DIRECTIONS))) {
+                                OpeningDirections(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.CONTACT_REGISTRATION_CAR_DOG))) {
-                                contactPassForTheCarDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.CONTACT_REGISTRATION_CAR))) {
+                                contactPassForTheCar(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.SAFETY_DOG_SHELTER))) {
-                                SafetyDogShelter(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.SAFETY_SHELTER))) {
+                                SafetyShelter(update.callbackQuery().from().id());
                             }
-                            if (data.equals(String.valueOf(Buttons.BACK_DOG))) {
-                                sendAfterDogInfo(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.BACK))) {
+                                sendAfterPetInfo(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
 
 //                            3 Этап
 
-                            if (data.equals(String.valueOf(Buttons.INTRODUCING_THE_DOG))) {
-                                IntroducingTheDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.INTRODUCING))) {
+                                Introducing(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.REQUIRED_DOCUMENTS_DOG))) {
-                                RequiredDocumentsDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.REQUIRED_DOCUMENTS))) {
+                                RequiredDocuments(update.callbackQuery().from().id());
                             }
-                            if (data.equals(String.valueOf(Buttons.TRANSPORT_RECOMMENDATIONS_DOG))) {
-                                TransportRecommendationsDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.TRANSPORT_RECOMMENDATIONS))) {
+                                TransportRecommendations(update.callbackQuery().from().id());
                             }
-                            if (data.equals(String.valueOf(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION_DOG))) {
-                                HouseForThePuppyRecommendationDOg(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION))) {
+                                HouseForThePuppyRecommendation(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION_DOG))) {
-                                HouseForAdultAnimalRecommendationDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION))) {
+                                HouseForAdultAnimalRecommendation(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(String.valueOf(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION_DOG))) {
-                                HouseForAnimalWithDisabilitiesRecomendationDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION))) {
+                                HouseForAnimalWithDisabilitiesRecomendation(update.callbackQuery().from().id());
                             }
                             if (data.equals(String.valueOf(Buttons.CYNOLOGIST_ADVICE_DOG))) {
-                                CynologistAdviceDog(update.callbackQuery().from().id());
+                                CynologistAdvice(update.callbackQuery().from().id());
                             }
                             if (data.equals(String.valueOf(Buttons.LIST_OF_VERIFIED_CATENORS_DOG))) {
-                                ListOfVerifiedCatenorsDog(update.callbackQuery().from().id());
+                                ListOfVerifiedCatenors(update.callbackQuery().from().id());
                             }
-                            if (data.equals(String.valueOf(Buttons.REASONS_FOR_REFUSAL_DOG))) {
-                                ReasonsForRefusalDog(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.REASONS_FOR_REFUSAL))) {
+                                ReasonsForRefusal(update.callbackQuery().from().id());
                             }
-                            if (data.equals(String.valueOf(Buttons.BACK_DOG1))) {
-                                adoptDogFromShelter(update.callbackQuery().from().id());
+                            if (data.equals(String.valueOf(Buttons.BACK1))) {
+                                adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
 
                         }
                         /**
-                        if (update.message().photo() != null) {
-                            Long chatId = update.message().from().id();
-                            if (statusMap.get(chatId).equals(AnswerStatus.SEND_FOTO)) {
-                            }
-                        }
-                        */
+                         if (update.message().photo() != null) {
+                         Long chatId = update.message().from().id();
+                         if (statusMap.get(chatId).equals(AnswerStatus.SEND_FOTO)) {
+                         }
+                         }
+                         */
                         if (update.message() != null) {
                             Message message = update.message();
                             Long chatId = message.chat().id();
@@ -194,6 +204,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                             if ("/start".equals(text)) {
                                 statusMap.remove(chatId);
+                                markMap.remove(chatId);
                                 sendAfterStart(chatId);
                             }
                         }
@@ -221,18 +232,19 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     //Рацион животного.
     //Общее самочувствие и привыкание к новому месту.
     //Изменение в поведении: отказ от старых привычек, приобретение новых.
-    private void sendDogReport(Update update) {
+    private void sendDogReport(Update update, ShelterMark shelterMark) {
         Long chatId = update.callbackQuery().from().id();
         String userName = update.callbackQuery().from().firstName();
-        try {
-            UserDog user = userDogRepository.findByChatId(chatId);
+        if (userDogRepository.findByChatId(chatId) != null) {
             statusMap.put(chatId, AnswerStatus.SEND_PET_NAME);
-        } catch (NullPointerException e) {
+        } else {
             UserDog user = new UserDog(userName, chatId);
             statusMap.put(chatId, AnswerStatus.SEND_PET_NAME);
             userDogRepository.save(user);
         }
-        telegramBot.execute(new SendMessage(chatId, "Напишите имя питомца"));
+        telegramBot.execute(new
+
+                SendMessage(chatId, "Напишите имя питомца"));
 
     }
 
@@ -243,7 +255,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      */
     private void sendAfterStart(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton("Приют для кошек").callbackData("/cat"),
+        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.CAT.getTitle()).callbackData(String.valueOf(Buttons.CAT)),
                 new InlineKeyboardButton(Buttons.DOG.getTitle()).callbackData(String.valueOf(Buttons.DOG)));
         telegramBot.execute(
                 new SendMessage(
@@ -255,51 +267,25 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     /**
      * Метод, который отвечает на нажатие кнопки выбора приюта
      *
-     * @param chatId - идентификатор чата, в котором вызвана команда
+     * @param chatId      - идентификатор чата, в котором вызвана команда
+     * @param shelterMark - маркировка выбранного приюта
      */
-    private void sendAfterCatShelter(Long chatId) {
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.CAT_INFO.getTitle()).callbackData(String.valueOf(Buttons.CAT_INFO)),
-                new InlineKeyboardButton("Взять животное из приюта").callbackData("/takeCat"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Прислать отчет о питомце").callbackData("/reportCat"),
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpCat"));
-        telegramBot.execute(
-                new SendMessage(
-                        chatId, "Добро пожаловать в приют для кошек. Выберите нужный раздел").replyMarkup(keyboardMarkup)
-
-        );
-    }
-
-    private void sendAfterDogShelter(Long chatId) {
+    private void sendAfterPetShelter(Long chatId, ShelterMark shelterMark) {
+        String catShelter = "Добро пожаловать в приют для кошек. Выберите нужный раздел";
+        String dogShelter = "Добро пожаловать в приют для собак. Выберите нужный раздел";
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.DOG_INFO.getTitle()).callbackData(String.valueOf(Buttons.DOG_INFO)),
-                new InlineKeyboardButton(Buttons.TAKE_DOG.getTitle()).callbackData(String.valueOf(Buttons.TAKE_DOG)));
+                new InlineKeyboardButton(Buttons.SHELTER_INFO.getTitle()).callbackData(String.valueOf(Buttons.SHELTER_INFO)),
+                new InlineKeyboardButton(Buttons.TAKE_PET.getTitle()).callbackData(String.valueOf(Buttons.TAKE_PET)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.REPORT_DOG.getTitle()).callbackData(String.valueOf(Buttons.REPORT_DOG)),
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
-        telegramBot.execute(
+                new InlineKeyboardButton(Buttons.REPORT.getTitle()).callbackData(String.valueOf(Buttons.REPORT)));
+        if (shelterMark.equals(ShelterMark.CAT_SHELTER)) {
+            telegramBot.execute(
+                    new SendMessage(
+                            chatId, catShelter).replyMarkup(keyboardMarkup));
+        } else telegramBot.execute(
                 new SendMessage(
-                        chatId, "Добро пожаловать в приют для собак. Выберите нужный раздел").replyMarkup(keyboardMarkup)
-        );
-    }
-
-    private void sendAfterCatInfo(Long chatId) {
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton("Общая информация о приюте").callbackData("/cat2Info"),
-                new InlineKeyboardButton("Контакты").callbackData("/catContact"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Общие рекомендации о технике безопасности на территории приюта").callbackData("/catSafety"),
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
-
-        telegramBot.execute(
-                new SendMessage(
-                        chatId, "Добро пожаловать в приют для кошек. Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
-
-        );
+                        chatId, dogShelter).replyMarkup(keyboardMarkup));
     }
 
     /**
@@ -307,22 +293,20 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      *
      * @param chatId - идентификатор чата, в котором вызвана команда
      */
-    private void sendAfterDogInfo(Long chatId) {
+    private void sendAfterPetInfo(Long chatId, ShelterMark shelterMark) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.INFO_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.INFO_DOG_SHELTER)));
+                new InlineKeyboardButton(Buttons.INFO_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.INFO_SHELTER)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.SAFETY_DOG_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.SAFETY_DOG_SHELTER)));
+                new InlineKeyboardButton(Buttons.SAFETY_SHELTER.getTitle()).callbackData(String.valueOf(Buttons.SAFETY_SHELTER)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.OPENING_DIRECTIONS_DOG.getTitle()).callbackData(String.valueOf(Buttons.OPENING_DIRECTIONS_DOG)));
+                new InlineKeyboardButton(Buttons.OPENING_DIRECTIONS.getTitle()).callbackData(String.valueOf(Buttons.OPENING_DIRECTIONS)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.CONTACT_REGISTRATION_CAR_DOG.getTitle()).callbackData(String.valueOf(Buttons.CONTACT_REGISTRATION_CAR_DOG)));
+                new InlineKeyboardButton(Buttons.CONTACT_REGISTRATION_CAR.getTitle()).callbackData(String.valueOf(Buttons.CONTACT_REGISTRATION_CAR)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton("Контакты").callbackData("/dogContact"));
+                new InlineKeyboardButton(Buttons.CONTACTS.getTitle()).callbackData(String.valueOf(Buttons.CONTACTS)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Оставить свои контактные данные для связи").callbackData("/userContact"));
+                new InlineKeyboardButton(Buttons.CONTACTS_FOR_COMMUNICATION.getTitle()).callbackData(String.valueOf(Buttons.CONTACTS_FOR_COMMUNICATION)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
@@ -330,28 +314,29 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void adoptDogFromShelter(Long chatId) {
+    private void adoptPetFromShelter(Long chatId, ShelterMark shelterMark) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.INTRODUCING_THE_DOG.getTitle()).callbackData(String.valueOf(Buttons.INTRODUCING_THE_DOG)));
+                new InlineKeyboardButton(Buttons.INTRODUCING.getTitle()).callbackData(String.valueOf(Buttons.INTRODUCING)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.REQUIRED_DOCUMENTS_DOG.getTitle()).callbackData(String.valueOf(Buttons.REQUIRED_DOCUMENTS_DOG)));
+                new InlineKeyboardButton(Buttons.REQUIRED_DOCUMENTS.getTitle()).callbackData(String.valueOf(Buttons.REQUIRED_DOCUMENTS)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.TRANSPORT_RECOMMENDATIONS_DOG.getTitle()).callbackData(String.valueOf(Buttons.TRANSPORT_RECOMMENDATIONS_DOG)));
+                new InlineKeyboardButton(Buttons.TRANSPORT_RECOMMENDATIONS.getTitle()).callbackData(String.valueOf(Buttons.TRANSPORT_RECOMMENDATIONS)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION_DOG.getTitle()).callbackData(String.valueOf(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION_DOG)));
+                new InlineKeyboardButton(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION.getTitle()).callbackData(String.valueOf(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION_DOG.getTitle()).callbackData(String.valueOf(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION_DOG)));
+                new InlineKeyboardButton(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION.getTitle()).callbackData(String.valueOf(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION)));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION_DOG.getTitle()).callbackData(String.valueOf(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION_DOG)));
+                new InlineKeyboardButton(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION.getTitle()).callbackData(String.valueOf(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION)));
+        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+            keyboardMarkup.addRow(
+                    new InlineKeyboardButton(Buttons.CYNOLOGIST_ADVICE_DOG.getTitle()).callbackData(String.valueOf(Buttons.CYNOLOGIST_ADVICE_DOG)));
+            keyboardMarkup.addRow(
+                    new InlineKeyboardButton(Buttons.LIST_OF_VERIFIED_CATENORS_DOG.getTitle()).callbackData(String.valueOf(Buttons.LIST_OF_VERIFIED_CATENORS_DOG)));
+        }
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.CYNOLOGIST_ADVICE_DOG.getTitle()).callbackData(String.valueOf(Buttons.CYNOLOGIST_ADVICE_DOG)));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.LIST_OF_VERIFIED_CATENORS_DOG.getTitle()).callbackData(String.valueOf(Buttons.LIST_OF_VERIFIED_CATENORS_DOG)));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.REASONS_FOR_REFUSAL_DOG.getTitle()).callbackData(String.valueOf(Buttons.REASONS_FOR_REFUSAL_DOG)));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton("Вызвать волонтера").callbackData("/helpDog"));
+                new InlineKeyboardButton(Buttons.REASONS_FOR_REFUSAL.getTitle()).callbackData(String.valueOf(Buttons.REASONS_FOR_REFUSAL)));
+
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Консультация с потенциальным хозяином животного из приюта").replyMarkup(keyboardMarkup)
@@ -361,13 +346,17 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
 // 2 Этап
 
-    private void InfoDogShelter(Long chatId) {
+    private void InfoPetShelter(Long chatId, ShelterMark shelterMark) {
+        String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(String.valueOf(Buttons.BACK)));
+        if (shelterMark == ShelterMark.CAT_SHELTER) {
+            text = "кошек";
+        } else text = "собак";
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Приют для собак — место содержания бездомных, потерянных или брошенных животных." +
+                        chatId, "Приют для " + text + " — место содержания бездомных, потерянных или брошенных животных." +
                         " Приюты являются одной из ключевых составляющих защиты животных и выполняют четыре" +
                         " сновных функции: оперативная помощь и забота о животном, включая облегчение страданий посредством ветеринарной" +
                         " помощи или эвтаназии; долгосрочная забота о животном, не нашедшем немедленно старого или нового хозяина; усилия по" +
@@ -377,10 +366,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void OpeningDirectionsDog(Long chatId) {
+    private void OpeningDirections(Long chatId, ShelterMark shelterMark) {
+        String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(String.valueOf(Buttons.BACK)));
+        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.";
+        } else text = "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.";
         telegramBot.execute(
                 new SendMessage(
                         chatId,
@@ -391,26 +384,32 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 "Пятница  7:00 — 20:00\n" +
                                 "Суббота  7:00 — 20:00\n" +
                                 "Воскресенье  Выходной\n" +
-                                "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.").replyMarkup(keyboardMarkup)
+                                text).replyMarkup(keyboardMarkup)
         );
     }
 
-    private void contactPassForTheCarDog(Long chatId) {
+    private void contactPassForTheCar(Long chatId, ShelterMark shelterMark) {
+        String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(String.valueOf(Buttons.BACK)));
+        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+            text = "Пункт охраны:\n" +
+                    "Телефон: 8-(912)-***-**-**\n" +
+                    "Для оформления пропуска на автомобиль\n ";
+        } else text = "Пункт охраны:\n" +
+                "Телефон: 8-(910)-***-**-**\n" +
+                "Для оформления пропуска на автомобиль\n ";
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Пункт охраны:\n" +
-                        "Телефон: 8-(912)-***-**-**\n" +
-                        "Для оформления пропуска на автомобиль\n ").replyMarkup(keyboardMarkup)
+                        chatId, text).replyMarkup(keyboardMarkup)
         );
     }
 
-    private void SafetyDogShelter(Long chatId) {
+    private void SafetyShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG)));
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(String.valueOf(Buttons.BACK)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Работники и посетители приюта обязаны соблюдать правила личной гигиены, в том числе" +
@@ -423,40 +422,47 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     // 3    Этап
 
-    private void IntroducingTheDog(Long chatId) {
+    private void Introducing(Long chatId, ShelterMark shelterMark) {
+        String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
+        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+            text = "1. Спросите у хозяина\n" +
+                    "Уточните у человека, не против ли будет он и его питомец, если вы познакомитесь. Как правило, люди знают своих животных и могут предположить, в настроении ли оно погладиться.\n" +
+                    "Если хозяин против - вежливо благодарим и уходим, это его право. Если хозяин за - переходим к следующему пункту. Тоже самое, если хотим пообщаться с беспризорным животным.\n" +
+                    "2. Замедление темпа сближения\n" +
+                    "Знаю, вам хочется поскорее дотронуться до шёрстки красавчика или красавицы, но держите себя в руках, подходите медленно, чтобы не напугать собаку. К тому-же быстрое приближение может быть воспринято как агрессия.\n" +
+                    "3. Дайте собаке проявить инициативу\n" +
+                    "Очень важно, чтобы питомец и сам хотел с вами знакомиться, иначе его ждёт только стресс и негативный опыт. А оно вам надо? Мы желаем собакенам добра.\n" +
+                    "4. Сигналы примирения\n" +
+                    "Наверно, ни для кого не секрет, что собаки общаются языком тела и уделяют огромное внимание нашим движениям и позам. Если понаблюдать за двумя незнакомыми животными, можно заметить, что они сближаются медленно, по дуге, постоянно отворачивают голову, замирают, нюхают землю - всё это демонстрация мирных намерений. Мы также можем использовать их язык: присесть на корточки, повернуться полубоком, отвернуть голову.\n" +
+                    "5. Дайте себя обнюхать\n" +
+                    "Собаки во многом полагаются на обоняние. Плавно протяните руку, при этом чуть отвернувшись от животного, и дайте ему познакомиться с вашим запахом.\n" +
+                    "6. Нейтральная доброжелательность\n" +
+                    "Не стоит радостно вопить и пытаться яростно наглаживать собаку, пугливых это может испугать ещё больше, а возбудимых спровоцировать поставить на вас лапы. Поэтому, разговариваем спокойным, дружелюбным тоном, и на лице изображаем тоже самое!\n" +
+                    "7. Нет резким движениям\n" +
+                    "Не думаю, что тут нужны какие-то пояснения.\n" +
+                    "8. Инициатива от собаки\n" +
+                    "Итак, животное вас обнюхало, и вроде бы можно начинать гладить, но нет. Посмотрите на реакцию: собака отстраняется от вашей руки или наоборот прислоняется, подставляясь под почесушки? В первом случае дайте животному уйти, не нужно настаивать на близком контакте, у всех должно быть личное пространство. Во втором - читаем дальше.\n" +
+                    "9. То самое место\n" +
+                    "Спросите у хозяина, где собака любит, чтобы её чесали, и следуйте инструкциям. Если хозяина нет, то руководствуемся здравым смыслом и реакциями животного. Лучше всего попробовать погладить по груди или плечу, так собака видит, где находится ваша рука. Но следите за реакциями, если животное начинает отстраняться, значит, ему некомфортно. Обычно собакам не очень нравятся прикосновения к голове и морде.";
+        } else text = "1. Спросите у хозяина\n" +
+                "Уточните у человека, не против ли будет он и его питомец, если вы познакомитесь. Как правило, люди знают своих животных и могут предположить, в настроении ли оно погладиться.\n" +
+                "Если хозяин против - вежливо благодарим и уходим, это его право. Если хозяин за - переходим к следующему пункту. Тоже самое, если хотим пообщаться с беспризорным животным.\n" +
+                "2. Замедление темпа сближения\n" +
+                "Знаю, вам хочется поскорее дотронуться до шёрстки красавчика или красавицы, но держите себя в руках, подходите медленно, чтобы не напугать кошку. К тому-же быстрое приближение может быть воспринято как агрессия.\n" +
+                "3. Дайте кошке проявить инициативу\n" +
+                "Очень важно, чтобы питомец и сам хотел с вами знакомиться, иначе его ждёт только стресс и негативный опыт. А оно вам надо? Мы желаем собакенам добра.\n";
         telegramBot.execute(
-                new SendMessage(
-                        chatId, "" +
-                        "1. Спросите у хозяина\n" +
-                        "Уточните у человека, не против ли будет он и его питомец, если вы познакомитесь. Как правило, люди знают своих животных и могут предположить, в настроении ли оно погладиться.\n" +
-                        "Если хозяин против - вежливо благодарим и уходим, это его право. Если хозяин за - переходим к следующему пункту. Тоже самое, если хотим пообщаться с беспризорным животным.\n" +
-                        "2. Замедление темпа сближения\n" +
-                        "Знаю, вам хочется поскорее дотронуться до шёрстки красавчика или красавицы, но держите себя в руках, подходите медленно, чтобы не напугать собаку. К тому-же быстрое приближение может быть воспринято как агрессия.\n" +
-                        "3. Дайте собаке проявить инициативу\n" +
-                        "Очень важно, чтобы питомец и сам хотел с вами знакомиться, иначе его ждёт только стресс и негативный опыт. А оно вам надо? Мы желаем собакенам добра.\n" +
-                        "4. Сигналы примирения\n" +
-                        "Наверно, ни для кого не секрет, что собаки общаются языком тела и уделяют огромное внимание нашим движениям и позам. Если понаблюдать за двумя незнакомыми животными, можно заметить, что они сближаются медленно, по дуге, постоянно отворачивают голову, замирают, нюхают землю - всё это демонстрация мирных намерений. Мы также можем использовать их язык: присесть на корточки, повернуться полубоком, отвернуть голову.\n" +
-                        "5. Дайте себя обнюхать\n" +
-                        "Собаки во многом полагаются на обоняние. Плавно протяните руку, при этом чуть отвернувшись от животного, и дайте ему познакомиться с вашим запахом.\n" +
-                        "6. Нейтральная доброжелательность\n" +
-                        "Не стоит радостно вопить и пытаться яростно наглаживать собаку, пугливых это может испугать ещё больше, а возбудимых спровоцировать поставить на вас лапы. Поэтому, разговариваем спокойным, дружелюбным тоном, и на лице изображаем тоже самое!\n" +
-                        "7. Нет резким движениям\n" +
-                        "Не думаю, что тут нужны какие-то пояснения.\n" +
-                        "8. Инициатива от собаки\n" +
-                        "Итак, животное вас обнюхало, и вроде бы можно начинать гладить, но нет. Посмотрите на реакцию: собака отстраняется от вашей руки или наоборот прислоняется, подставляясь под почесушки? В первом случае дайте животному уйти, не нужно настаивать на близком контакте, у всех должно быть личное пространство. Во втором - читаем дальше.\n" +
-                        "9. То самое место\n" +
-                        "Спросите у хозяина, где собака любит, чтобы её чесали, и следуйте инструкциям. Если хозяина нет, то руководствуемся здравым смыслом и реакциями животного. Лучше всего попробовать погладить по груди или плечу, так собака видит, где находится ваша рука. Но следите за реакциями, если животное начинает отстраняться, значит, ему некомфортно. Обычно собакам не очень нравятся прикосновения к голове и морде."
-                ).replyMarkup(keyboardMarkup)
+                new SendMessage(chatId, text).replyMarkup(keyboardMarkup)
         );
     }
 
-    private void RequiredDocumentsDog(Long chatId) {
+    private void RequiredDocuments(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Перечень документов на получение животного из приюта:\n" +
@@ -469,10 +475,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void TransportRecommendationsDog(Long chatId) {
+    private void TransportRecommendations(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Tребования к перевозке домашних животных в автомобиле:\n" +
@@ -489,70 +495,97 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void HouseForThePuppyRecommendationDOg(Long chatId) {
+    private void HouseForThePuppyRecommendation(Long chatId, ShelterMark shelterMark) {
+        String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
+        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+            text = "щенка";
+        } else text = "котенка";
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Дом для щенка. Рекомендации.\n" +
-                        "Первое появление щенка в доме, как правило, вызывает восторг у домочадцев, однако щенка внезапное" +
+                        chatId, "Дом для " + text + ". Рекомендации.\n" +
+                        "Первое появление " + text + " в доме, как правило, вызывает восторг у домочадцев, однако питомца внезапное" +
                         " чрезмерное внимание может напугать, поэтому всем следует вести себя сдержанно и знакомиться постепенно." +
-                        " Если у вас есть дети, то объясните им, как правильно брать щенка на руки (осторожно, но надежно, двумя руками:" +
+                        " Если у вас есть дети, то объясните им, как правильно брать " + text + "на руки (осторожно, но надежно, двумя руками:" +
                         " одной — под передние лапы и грудь, другой — под попу и задние лапы) и как вести себя с ним (чрезмерно не беспокоить," +
-                        " в том числе когда он спит, а спать он будет много). Другим домашним животным в доме щенка «представить» стоит аккуратно" +
+                        " в том числе когда он спит, а спать он будет много). Другим домашним животным в доме " + text + "«представить» стоит аккуратно" +
                         " и постепенно. Дайте им обнюхать друг друга, но внимательно следите за их поведением, чтобы избежать последствий возможной" +
-                        " агрессии.Прежде всего нужно дать щенку утолить любопытство, обследовать самостоятельно новое жилище. Если в это время он захочет в туалет," +
-                        " то первоначально не стоит его нести в отведенное место, поскольку он еще не достаточно со всем знаком. Когда щенок немного утолит любопытство," +
+                        " агрессии.Прежде всего нужно дать питомцу утолить любопытство, обследовать самостоятельно новое жилище. Если в это время он захочет в туалет," +
+                        " то первоначально не стоит его нести в отведенное место, поскольку он еще не достаточно со всем знаком. Когда питомец немного утолит любопытство," +
                         " можете ознакамливать его с ключевыми местами его обитания — «спальней», «кухней» и туалетом. Покормите малыша из его новых мисочек," +
                         " пусть понемногу привыкает к ним. Вскоре после кормления он захочет в туалет, поэтому внимательно следите за ним и когда заметите признаки," +
-                        " пересадите щенка в лоток (или на пеленку). После туалета отнесите питомца в его укромное место для сна, в лежанку предварительно положите вещь," +
+                        " пересадите " + text + "в лоток (или на пеленку). После туалета отнесите питомца в его укромное место для сна, в лежанку предварительно положите вещь," +
                         " которую вы взяли из его предыдущего дома"
                 ).replyMarkup(keyboardMarkup)
         );
     }
 
-    private void HouseForAdultAnimalRecommendationDog(Long chatId) {
+    private void HouseForAdultAnimalRecommendation(Long chatId, ShelterMark shelterMark) {
+        String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
+        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+            text = "Дом для взрослого животного. Рекомендации.\n" +
+                    "1. Дайте собаке время на адаптацию в новом доме.\n" +
+                    "Допустим, вы приняли решение забрать собаку. Не имеет значения, насколько обдуманным был ваш выбор – в любом случае вы гораздо лучше собаки" +
+                    " понимаете, что происходит. Посмотрите на ситуацию ее глазами: она покинула обжитое место и едет в неизвестность с едва знакомыми существами." +
+                    " Собака испытывает стресс вне зависимости от того, какой была ее жизнь до этого момента. Новый дом означает новые правила, общение с новыми" +
+                    " людьми требует осторожности. Если желаете собаке добра, по приезду домой оставьте ее в покое, предоставив свободный доступ к воде и корму." +
+                    " Не навязывайте ей свое общество. Собаке потребуется от нескольких часов до нескольких дней, чтобы прийти в себя и оценить обстановку.\n" +
+                    "2. Наблюдайте за поведением собаки\n" +
+                    "Собака раскрывается в течение одного-двух месяцев. Думаете, только щенки грызут мебель и воют в отсутствие хозяев? У вас есть все шансы убедиться" +
+                    " в обратном. Считаете, что выбранной собаке не свойственна агрессия? Я бы все равно старался поначалу обходить острые углы. Вам показалось, что" +
+                    " собака хорошо поладила с ребенком? Примите во внимание, что она могла быть просто скованна и не решалась высказать недовольство. Заметив проблему," +
+                    " не паникуйте, а свяжитесь со специалистом. Так будет лучше для всех.\n" +
+                    "3. Будьте взрослыми\n" +
+                    "Быть взрослым в моем понимании означает умение трезво оценивать последствия своих решений. Собака, которую вы берете в приюте, наверняка не будет" +
+                    " похожа ни на одну из ваших предыдущих. Будучи сложившейся личностью, она вряд ли согласится соответствовать образу, который вы себе нарисовали." +
+                    " Попробуйте загнать ее в рамки, и она быстро покажет, что вы и ваша семья не великие благодетели, а пока еще просто остановка на пути." +
+                    "Новичкам не нужно брать заведомо проблемных собак. Но это не точно. Метис Лапа. Только не подумайте, будто я специально сгущаю краски. Вспомните, как порой " +
+                    "бывает трудно найти общий язык с другим человеком. Невероятно трудно! Хотя, казалось бы, для взаимопонимания нет никаких препятствий – вы принадлежите к одному" +
+                    " виду, одинаково мыслите и говорите на одном языке. А тут речь идет о том, чтобы договориться со сложившейся личностью из иного мира: шанс исправить ситуацию" +
+                    " появится лишь при условии достаточной настойчивости. Вытекающее из этого правило гласит, что новичкам не нужно брать заведомо проблемных собак. Но это не точно." +
+                    " По моим наблюдениям, некоторые собаки, которых отдали в приют из-за их дурного поведения, в новой семье ведут себя значительно лучше. Почему? Я связываю это с тем," +
+                    " что благодаря переезду разрывается порочный круг привычек собаки и ошибок хозяина, который является своего рода системой с положительной обратной связью, где одно событие " +
+                    "усиливает связанное с ним другое.К слову, недавно я работал с такой собакой. Сид, обаятельный молодой пес, которого кураторы называли «склонным к доминированию»." +
+                    " Его ломали, пытались подавить, а он отвечал людям ожесточенным сопротивлением. Будущая хозяйка рискнула и не прогадала: как оказалось, с собакой просто не нужно было" +
+                    " бороться. Чтобы чувствовать себя комфортно, Сиду требовались нормальные прогулки, интересные игры и активные занятия. Я отслеживал его на протяжении нескольких недель." +
+                    " За это время в новой семье, где отношения строились на взаимном уважении, парень ни разу не доставил никому неприятностей. Случаи, подобные этому, когда собака удивительным" +
+                    " образом трансформируется из тирана в домашнего любимца, дают повод для оптимизма. Они показывают, что изменения возможны, но, разумеется, не гарантируют, что и у вас все проблемы решатся настолько же легко. Хорошо, если так. По-моему, лучше быть готовым к худшему.";
+        } else text = "Дом для взрослого животного. Рекомендации.\n" +
+                "1. Дайте кошке время на адаптацию в новом доме\n" +
+                "Допустим, вы приняли решение забрать кошку. Не имеет значения, насколько обдуманным был ваш выбор – в любом случае вы гораздо лучше кошки" +
+                " понимаете, что происходит. Посмотрите на ситуацию ее глазами: она покинула обжитое место и едет в неизвестность с едва знакомыми существами." +
+                " Кошка испытывает стресс вне зависимости от того, какой была ее жизнь до этого момента. Новый дом означает новые правила, общение с новыми" +
+                " людьми требует осторожности. Если желаете кошке добра, по приезду домой оставьте ее в покое, предоставив свободный доступ к воде и корму." +
+                " Не навязывайте ей свое общество. Кошке потребуется от нескольких часов до нескольких дней, чтобы прийти в себя и оценить обстановку.\n" +
+                "2. Наблюдайте за поведением кошки\n" +
+                "Кошка раскрывается в течение одного-двух месяцев. Думаете, только котята грызут мебель и воют в отсутствие хозяев? У вас есть все шансы убедиться" +
+                " в обратном. Считаете, что выбранной кошке не свойственна агрессия? Я бы все равно старался поначалу обходить острые углы. Вам показалось, что" +
+                " кошка хорошо поладила с ребенком? Примите во внимание, что она могла быть просто скованна и не решалась высказать недовольство. Заметив проблему," +
+                " не паникуйте, а свяжитесь со специалистом. Так будет лучше для всех.\n" +
+                "3. Будьте взрослыми\n" +
+                "Быть взрослым в моем понимании означает умение трезво оценивать последствия своих решений. Кошка, которую вы берете в приюте, наверняка не будет" +
+                " похожа ни на одну из ваших предыдущих. Будучи сложившейся личностью, она вряд ли согласится соответствовать образу, который вы себе нарисовали." +
+                " Попробуйте загнать ее в рамки, и она быстро покажет, что вы и ваша семья не великие благодетели, а пока еще просто остановка на пути." +
+                "Новичкам не нужно брать заведомо проблемных кошек. Но это не точно. Метис Лапа. Только не подумайте, будто я специально сгущаю краски. Вспомните, как порой " +
+                "бывает трудно найти общий язык с другим человеком. Невероятно трудно! Хотя, казалось бы, для взаимопонимания нет никаких препятствий – вы принадлежите к одному" +
+                " виду, одинаково мыслите и говорите на одном языке. А тут речь идет о том, чтобы договориться со сложившейся личностью из иного мира: шанс исправить ситуацию" +
+                " появится лишь при условии достаточной настойчивости. Вытекающее из этого правило гласит, что новичкам не нужно брать заведомо проблемных кошек. Но это не точно." +
+                " По моим наблюдениям, некоторые кошки, которых отдали в приют из-за их дурного поведения, в новой семье ведут себя значительно лучше. Почему? Я связываю это с тем," +
+                " что благодаря переезду разрывается порочный круг привычек кошки и ошибок хозяина";
         telegramBot.execute(
-                new SendMessage(
-                        chatId, "Дом для взрослого животного. Рекомендации.\n" +
-                        "1. Дайте собаке время на адаптацию в новом доме\n" +
-                        "Допустим, вы приняли решение забрать собаку. Не имеет значения, насколько обдуманным был ваш выбор – в любом случае вы гораздо лучше собаки" +
-                        " понимаете, что происходит. Посмотрите на ситуацию ее глазами: она покинула обжитое место и едет в неизвестность с едва знакомыми существами." +
-                        " Собака испытывает стресс вне зависимости от того, какой была ее жизнь до этого момента. Новый дом означает новые правила, общение с новыми" +
-                        " людьми требует осторожности. Если желаете собаке добра, по приезду домой оставьте ее в покое, предоставив свободный доступ к воде и корму." +
-                        " Не навязывайте ей свое общество. Собаке потребуется от нескольких часов до нескольких дней, чтобы прийти в себя и оценить обстановку." +
-                        "2. Наблюдайте за поведением собаки\n" +
-                        "Собака раскрывается в течение одного-двух месяцев. Думаете, только щенки грызут мебель и воют в отсутствие хозяев? У вас есть все шансы убедиться" +
-                        " в обратном. Считаете, что выбранной собаке не свойственна агрессия? Я бы все равно старался поначалу обходить острые углы. Вам показалось, что" +
-                        " собака хорошо поладила с ребенком? Примите во внимание, что она могла быть просто скованна и не решалась высказать недовольство. Заметив проблему," +
-                        " не паникуйте, а свяжитесь со специалистом. Так будет лучше для всех." +
-                        "3. Будьте взрослыми\n" +
-                        "Быть взрослым в моем понимании означает умение трезво оценивать последствия своих решений. Собака, которую вы берете в приюте, наверняка не будет" +
-                        " похожа ни на одну из ваших предыдущих. Будучи сложившейся личностью, она вряд ли согласится соответствовать образу, который вы себе нарисовали." +
-                        " Попробуйте загнать ее в рамки, и она быстро покажет, что вы и ваша семья не великие благодетели, а пока еще просто остановка на пути." +
-                        "Новичкам не нужно брать заведомо проблемных собак. Но это не точно. Метис Лапа. Только не подумайте, будто я специально сгущаю краски. Вспомните, как порой " +
-                        "бывает трудно найти общий язык с другим человеком. Невероятно трудно! Хотя, казалось бы, для взаимопонимания нет никаких препятствий – вы принадлежите к одному" +
-                        " виду, одинаково мыслите и говорите на одном языке. А тут речь идет о том, чтобы договориться со сложившейся личностью из иного мира: шанс исправить ситуацию" +
-                        " появится лишь при условии достаточной настойчивости. Вытекающее из этого правило гласит, что новичкам не нужно брать заведомо проблемных собак. Но это не точно." +
-                        " По моим наблюдениям, некоторые собаки, которых отдали в приют из-за их дурного поведения, в новой семье ведут себя значительно лучше. Почему? Я связываю это с тем," +
-                        " что благодаря переезду разрывается порочный круг привычек собаки и ошибок хозяина, который является своего рода системой с положительной обратной связью, где одно событие " +
-                        "усиливает связанное с ним другое.К слову, недавно я работал с такой собакой. Сид, обаятельный молодой пес, которого кураторы называли «склонным к доминированию»." +
-                        " Его ломали, пытались подавить, а он отвечал людям ожесточенным сопротивлением. Будущая хозяйка рискнула и не прогадала: как оказалось, с собакой просто не нужно было" +
-                        " бороться. Чтобы чувствовать себя комфортно, Сиду требовались нормальные прогулки, интересные игры и активные занятия. Я отслеживал его на протяжении нескольких недель." +
-                        " За это время в новой семье, где отношения строились на взаимном уважении, парень ни разу не доставил никому неприятностей. Случаи, подобные этому, когда собака удивительным" +
-                        " образом трансформируется из тирана в домашнего любимца, дают повод для оптимизма. Они показывают, что изменения возможны, но, разумеется, не гарантируют, что и у вас все проблемы решатся настолько же легко. Хорошо, если так. По-моему, лучше быть готовым к худшему."
-                ).replyMarkup(keyboardMarkup)
+                new SendMessage(chatId, text).replyMarkup(keyboardMarkup)
         );
     }
 
-    private void HouseForAnimalWithDisabilitiesRecomendationDog(Long chatId) {
+    private void HouseForAnimalWithDisabilitiesRecomendation(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Дом для животного с ограниченными возможностями. Рекомендации.\n" +
@@ -585,10 +618,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void CynologistAdviceDog(Long chatId) {
+    private void CynologistAdvice(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Советы кинолога.\n" +
@@ -611,41 +644,43 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                         "Поощрение игрушкой\n" +
                         "Поощрение лакомствами\n" +
                         "Для того, чтобы у собаки была мотивация в получении лакомства, перед тренировкой пропустите один приём пищи. Так собачка захочет" +
-                        " получить лакомство ещё сильнее.Мы рассмотрим последний вариант: он наиболее эффективный. Из списка вкусняшек мы сразу исключаем:" +
+                        " получить лакомство ещё сильнее.Из списка вкусняшек мы сразу исключаем:" +
                         " сосиски, колбасу, сыр и прочие жирные продукты. Всё вышеперечисленное может изрядно подкосить здоровье вашего любимца, чего мы," +
-                        " естественно, не хотим. А теперь о том, почему поясная сумочка для лакомств — это важно. Один из основных принципов " +
+                        " естественно, не хотим. Один из основных принципов " +
                         "дрессировки — поощрять собаку СРАЗУ после того, как она выполнила команду. Тобишь, когда Тузик принёс мячик, он должен получить свою" +
-                        " заслуженную вкусняшку, а не ждать пока вы перевернёте все сумочки, пакеты, карманы в поисках лакомства. Пока вы, наконец, найдёте то," +
-                        " что нужно, собака и вовсе забудет, за что её похвалили. Помните, лакомство должно быть маленьким! Иначе животное отвлечётся от процесса" +
-                        " тренировки. Выбор места: Новичкам лучше всего начинать с квартиры. Там и раздражителей поменьше, и обстановка для питомца максимально " +
+                        " заслуженную вкусняшку, а не ждать пока вы, наконец, найдёте то," +
+                        " что нужно. Собака забудет, за что её похвалили. Помните, лакомство должно быть маленьким! Иначе животное отвлечётся от процесса" +
+                        " тренировки.\n" +
+                        " Выбор места: Новичкам лучше всего начинать с квартиры. Там и раздражителей поменьше, и обстановка для питомца максимально " +
                         "знакомая. По мере усвоения, можете перейти на собачьи площадки и улицу. Важно! Всё время менять локацию! Если вы тренируете собаку только дома," +
                         " выполнять команду на улице она не станет.\n" +
                         "3. Как сделать так, чтобы для питомца дрессировка стала самым лакомым моментом?\n" +
                         "5 простых правил, как сделать дрессировку весёлой для вас и вашего питомца:\n" +
-                        "1. Очень, ОЧЕНЬ много хвалить и поощрять собаку на первых порах. Первые тренировки — не что иное, как конфетно-букетный период. Комплименты," +
+                        "1. ОЧЕНЬ много хвалить и поощрять собаку на первых порах. Первые тренировки — не что иное, как конфетно-букетный период. Комплименты," +
                         " восхищение, угощения — делайте всё, чтобы собака чувствовала себя лучшим существом на планете. А чтобы хозяин возводил её на небеса, всего-то " +
                         "надо принести мячик и прижать свою попу по команде.\n" +
-                        "2. Делать перерывы по 5-10 минут. Не забывайте, что собака — живое существо. Как и у нас, от переизбытка информации у пёселей плавится мозг." +
+                        "2. Делать перерывы по 5-10 минут. Не забывайте, что собака — живое существо." +
                         " Во время отдыха не тревожьте животинку, пусть питомец поделает то, что ему хочется. Как только собака привыкнет к интеллектуальным нагрузкам, " +
                         "вы сможете сокращать перерывы. Но первый месяц пёсель должен отдыхать как минимум 10-20 минут за тренировку.\n" +
-                        "3. Не очеловечивайте животное и не злитесь, если питомец вас не понимает. Да, собака — лучший друг человека, но от этого она не перестаёт быть СОБАКОЙ." +
-                        " Другим биологическим видом! Сами по себе слова «сидеть», «лежать» и «апорт» для вашего питомца пустые звуки. Собакен ассоциирует команду с конкретным" +
-                        " действием только после длительных тренировок. Сами подумайте, если бы ваш пёсель понимал человеческий, к чему бы были нужны все эти дрессировки?" +
-                        "Твой пёсель, когда ты пытаешься ему объяснить команду.\n" +
+                        "3. Не очеловечивайте животное и не злитесь, если питомец вас не понимает." +
+                        " Сами по себе слова «сидеть», «лежать» и «апорт» для вашего питомца пустые звуки. Собакен ассоциирует команду с конкретным" +
+                        " действием только после длительных тренировок. Если бы ваш пёсель понимал человеческий, к чему бы были нужны все эти дрессировки?\n" +
                         "4. Быть на позитиве! За тысячелетнее соседство с человеком, собаки научились отлично понимать настроение своего хозяина по тону голоса, жестам," +
                         " мимике. Если вы приступили к занятиям с угрюмым настроением, с вероятностью 99,9% ничего не получится. Пёсель, как и вы, захочет поскорее" +
                         " закончить тренировку. Поэтому очень важно получать от процесса неподдельный кайф. Наслаждайтесь общением с вашим любимцем, вашими успехами, свежим воздухом.\n" +
                         "5. Самое главное, сделайте так, чтобы собаке ХОТЕЛОСЬ возвращаться к занятиям. Нельзя, чтобы тренировка превращалась для собаки в каторгу, куда её ведут волоком" +
                         " и заставляют насильно выполнять то, что ей не нравится. Тренировка должна быть наполнена лакомыми моментами. Общение с хозяином, вкусняшки, похвала — это ли не" +
                         " рай для любого питомца?"
-                ).replyMarkup(keyboardMarkup)
+
+                )
+                        .replyMarkup(keyboardMarkup)
         );
     }
 
-    private void ListOfVerifiedCatenorsDog(Long chatId) {
+    private void ListOfVerifiedCatenors(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Список проверенных кинологов.\n" +
@@ -657,10 +692,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void ReasonsForRefusalDog(Long chatId) {
+    private void ReasonsForRefusal(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK_DOG1.getTitle()).callbackData(String.valueOf(Buttons.BACK_DOG1)));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Причины отказа.\n" +

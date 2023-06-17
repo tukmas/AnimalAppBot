@@ -9,7 +9,7 @@ import javax.transaction.Transactional;
 @Service
 @Transactional
 public class PhotoService {
-@Value("${reports.photo.dit.path}")
+@Value("photo")
     private String photoDir;
 private final DogReportRepository dogReportRepository;
 
