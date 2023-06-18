@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface CatRepository extends JpaRepository<Cat, Long> {
     List<Cat> findByUserId(long userId);
+    Cat findByUserChatIdAndName(long chatId, String name);
 }
