@@ -206,6 +206,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 statusMap.remove(chatId);
                                 markMap.remove(chatId);
                                 sendAfterStart(chatId);
+
                             }
                         }
                     });
@@ -259,7 +260,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 new InlineKeyboardButton(Buttons.DOG.getTitle()).callbackData(String.valueOf(Buttons.DOG)));
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Привет! Я помогу тебе выбрать питомца. Нажмите кнопку ниже, чтобы перейти в приют, в котором живут кошки или собаки").replyMarkup(keyboardMarkup)
+                        chatId, "Привет! Я помогу тебе выбрать питомца. " +
+                        "Нажмите кнопку ниже, чтобы перейти в приют," +
+                        " в котором живут кошки или собаки").replyMarkup(keyboardMarkup)
 
         );
     }
