@@ -34,7 +34,7 @@ public enum Buttons {
     CONTACTS("Контакты"),
     BACK1("Вернуться назад");
 
-    private String title;
+    private final String title;
 
     Buttons(String title) {
         this.title = title;

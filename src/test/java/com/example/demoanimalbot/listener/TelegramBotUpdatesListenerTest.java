@@ -90,10 +90,9 @@ class TelegramBotUpdatesListenerTest {
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
-        ArgumentCaptor<InlineKeyboardMarkup> argumentCaptor1 = ArgumentCaptor.forClass(InlineKeyboardMarkup.class);
-        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture().replyMarkup(argumentCaptor1.capture()));
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
         SendMessage actual = argumentCaptor.getValue();
-        InlineKeyboardMarkup keyboardMarkup = argumentCaptor1.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
 
         Assertions.assertNotNull(keyboardMarkup);
 
@@ -103,8 +102,34 @@ class TelegramBotUpdatesListenerTest {
 
     }
     @Test
-    void sendAfterPetShelter() {
+    void sendAfterPetShelter() throws URISyntaxException, IOException{
+        String name = "Приют для кошек";
+        String catShelter = "Добро пожаловать в приют для кошек. Выберите нужный раздел";
+        String dogShelter = "Добро пожаловать в приют для собак. Выберите нужный раздел";
 
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", name), Update.class);
+
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNotNull(keyboardMarkup);
+        if (name.equals("Приют для кошек")) {
+            Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+            Assertions.assertEquals(actual.getParameters().get("text"),
+                    catShelter);
+        }
+        if (name.equals("Приют для собак")) {
+            Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+            Assertions.assertEquals(actual.getParameters().get("text"),
+                    dogShelter);
+
+        }
     }
 
 
