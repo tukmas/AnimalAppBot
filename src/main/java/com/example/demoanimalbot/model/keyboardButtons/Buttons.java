@@ -11,27 +11,26 @@ public enum Buttons {
      */
     // 1 Этап
     DOG("Приют для собак"),
-    SHELTER_INFO("Информация о приюте"),
-    TAKE_PET("Взять питомца из приюта"),
+    INFO("О приюте"),
+    TAKE("Взять питомца"),
     REPORT("Прислать отчет о питомце"),
     // 2 Этап
-    INFO_SHELTER("Общая информация о приюте"),
-    OPENING_DIRECTIONS("Расписание работы приюта и адрес, схема проезда."),
-    CONTACT_REGISTRATION_CAR("Контактные данные охраны для оформления пропуска на машину."),
-    SAFETY_SHELTER("Общие рекомендации по технике безопасности"),
-    CONTACTS_FOR_COMMUNICATION("Оставить свои контакты для связи."),
+    SHELTER("Общая информация"),
+    CONTACTS("Контакты"),
+   // CONTACT_REGISTRATION_CAR("Контактные данные охраны для оформления пропуска на машину."),
+    SAFETY_SHELTER("Правила поведения в приюте"),
+    BACK_CONTACTS("Оставить свои контакты для связи."),
     BACK("Вернуться назад"),
     // 3 Этап
-    INTRODUCING("Знакомство с питомцем."),
-    REQUIRED_DOCUMENTS("Необходимые документы."),
-    TRANSPORT_RECOMMENDATIONS("Рекомендаций по транспортировке."),
-    HOUSE_FOR_THE_PUPPY_RECOMMENDATION("Дом для маленького питомца. Рекомендации."),
-    HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION("Дом для взрослого животного. Рекомендации."),
-    HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION("Дом для животного с ограниченными возможностями. Рекомендации."),
-    CYNOLOGIST_ADVICE_DOG("Советы кинолога."),
-    LIST_OF_VERIFIED_CATENORS_DOG("Список проверенных кинологов."),
+    INTRODUCING("Знакомимся с питомцем."),
+    DOCUMENTS("Необходимые документы."),
+    TRANSPORTATION("Рекомендаций по транспортировке."),
+    PUPPY_HOME("Дом для маленького питомца. Рекомендации."),
+    PET_HOME("Дом для взрослого животного. Рекомендации."),
+    DISABLED_PET_HOME("Дом для животного с ограниченными возможностями. Рекомендации."),
+    CYNOLOGIST_ADVICE("Советы кинолога."),
+    LIST_OF_CYNOLOGISTS("Список проверенных кинологов."),
     REASONS_FOR_REFUSAL("Причины отказа."),
-    CONTACTS("Контакты"),
     BACK1("Вернуться назад");
 
     private final String title;
@@ -43,4 +42,5 @@ public enum Buttons {
     public String getTitle() {
         return title;
     }
+
 }

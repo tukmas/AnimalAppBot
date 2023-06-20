@@ -75,81 +75,81 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             String data = update.callbackQuery().data();
                             Long chatId = update.callbackQuery().from().id();
                             String userName = update.callbackQuery().from().firstName();
-                            if (data.equals(Buttons.CAT.getTitle())) {
+                            if (data.equals(Buttons.CAT.toString())) {
                                 if (userCatRepository.findByChatId(chatId) == null) {
                                     UserCat user = new UserCat(userName, chatId);
                                     userCatRepository.save(user);
                                 }
-                                markMap.put(chatId, ShelterMark.CAT_SHELTER);
-                                sendAfterPetShelter(chatId, ShelterMark.CAT_SHELTER);
+                                markMap.put(chatId, ShelterMark.CAT);
+                                sendAfterPetShelter(chatId, ShelterMark.CAT);
                             }
-                            if (data.equals(Buttons.DOG.getTitle())) {
+                            if (data.equals(Buttons.DOG.toString())) {
                                 if (userDogRepository.findByChatId(chatId) == null) {
                                     UserDog user = new UserDog(userName, chatId);
                                     userDogRepository.save(user);
                                 }
-                                markMap.put(chatId, ShelterMark.DOG_SHELTER);
-                                sendAfterPetShelter(chatId, ShelterMark.DOG_SHELTER);
+                                markMap.put(chatId, ShelterMark.DOG);
+                                sendAfterPetShelter(chatId, ShelterMark.DOG);
                             }
 
-                            if (data.equals(Buttons.SHELTER_INFO.getTitle())) {
-                                sendAfterPetInfo(update.callbackQuery().from().id());
+                            if (data.equals(Buttons.INFO.toString())) {
+                                sendAfterPetInfo(update);
                             }
-                            if (data.equals(Buttons.TAKE_PET.getTitle())) {
+                            if (data.equals(Buttons.TAKE.toString())) {
                                 adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(Buttons.REPORT.getTitle())) {
+                            if (data.equals(Buttons.REPORT.toString())) {
                                 sendReport(update);
                             }
 
 //                            2 Этап
 
-                            if (data.equals(Buttons.INFO_SHELTER.getTitle())) {
+                            if (data.equals(Buttons.SHELTER.toString())) {
                                 InfoPetShelter(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(Buttons.OPENING_DIRECTIONS.getTitle())) {
+                            if (data.equals(Buttons.CONTACTS.toString())) {
                                 OpeningDirections(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(Buttons.CONTACT_REGISTRATION_CAR.getTitle())){
-                                contactPassForTheCar(update.callbackQuery().from().id(), markMap.get(chatId));
-                            }
-                            if (data.equals(Buttons.SAFETY_SHELTER.getTitle())) {
+                            //if (data.equals(Buttons.CONTACT_REGISTRATION_CAR.getTitle())) {
+                            //  contactPassForTheCar(update.callbackQuery().from().id(), markMap.get(chatId));
+                            //}
+                            if (data.equals(Buttons.SAFETY_SHELTER.toString())) {
                                 SafetyShelter(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.BACK.getTitle())) {
-                                sendAfterPetInfo(update.callbackQuery().from().id());
+                            if (data.equals(Buttons.BACK.toString())) {
+                                sendAfterPetInfo(update);
                             }
 
 //                            3 Этап
 
-                            if (data.equals(Buttons.INTRODUCING.getTitle())) {
+                            if (data.equals(Buttons.INTRODUCING.toString())) {
                                 Introducing(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(Buttons.REQUIRED_DOCUMENTS.getTitle())) {
+                            if (data.equals(Buttons.DOCUMENTS.toString())) {
                                 RequiredDocuments(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.TRANSPORT_RECOMMENDATIONS.getTitle())) {
+                            if (data.equals(Buttons.TRANSPORTATION.toString())) {
                                 TransportRecommendations(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION.getTitle())) {
+                            if (data.equals(Buttons.PUPPY_HOME.toString())) {
                                 HouseForThePuppyRecommendation(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION.getTitle())) {
+                            if (data.equals(Buttons.PET_HOME.toString())) {
                                 HouseForAdultAnimalRecommendation(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            if (data.equals(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION.getTitle())) {
+                            if (data.equals(Buttons.DISABLED_PET_HOME.toString())) {
                                 HouseForAnimalWithDisabilitiesRecomendation(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.CYNOLOGIST_ADVICE_DOG.getTitle())) {
+                            if (data.equals(Buttons.CYNOLOGIST_ADVICE.toString())) {
                                 CynologistAdvice(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.LIST_OF_VERIFIED_CATENORS_DOG.getTitle())) {
+                            if (data.equals(Buttons.LIST_OF_CYNOLOGISTS.toString())) {
                                 ListOfVerifiedCatenors(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.REASONS_FOR_REFUSAL.getTitle())) {
+                            if (data.equals(Buttons.REASONS_FOR_REFUSAL.toString())) {
                                 ReasonsForRefusal(update.callbackQuery().from().id());
                             }
-                            if (data.equals(Buttons.BACK1.getTitle())) {
+                            if (data.equals(Buttons.BACK1.toString())) {
                                 adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
 
@@ -171,7 +171,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                                 switch (status) {
                                     case SEND_PET_NAME -> {
-                                        if (markMap.get(chatId).equals(ShelterMark.DOG_SHELTER) &&
+                                        if (markMap.get(chatId).equals(ShelterMark.DOG) &&
                                                 dogRepository.findByUserChatIdAndName(chatId, text) != null) {
                                             Dog dog = dogRepository.findByUserChatIdAndName(chatId, text);
                                             DogReport dogReport = new DogReport(LocalDateTime.now(), dog);
@@ -180,7 +180,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Опишите рацион питомца"));
                                         }
-                                        if (markMap.get(chatId).equals(ShelterMark.CAT_SHELTER) &&
+                                        if (markMap.get(chatId).equals(ShelterMark.CAT) &&
                                                 catRepository.findByUserChatIdAndName(chatId, text) != null) {
                                             Cat cat = catRepository.findByUserChatIdAndName(chatId, text);
                                             CatReport catReport = new CatReport(LocalDateTime.now(), cat);
@@ -188,13 +188,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             statusMap.put(chatId, AnswerStatus.SEND_DIET);
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Опишите рацион питомца"));
-                                        } else
+                                        } else if (!text.contains("/"))
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Питомец с таким именем не найден. Попробуйте еще раз или выберите пункт Меню."));
                                     }
 
                                     case SEND_DIET -> {
-                                        if (markMap.get(chatId).equals(ShelterMark.CAT_SHELTER)) {
+                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setDiet(text);
                                         } else dogReportMap.get(chatId).setDiet(text);
 
@@ -204,7 +204,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         );
                                     }
                                     case SEND_WELLBEING -> {
-                                        if (markMap.get(chatId).equals(ShelterMark.CAT_SHELTER)) {
+                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setWellBeing(text);
                                         } else dogReportMap.get(chatId).setWellBeing(text);
 
@@ -214,7 +214,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         );
                                     }
                                     case SEND_BEHAVIOR -> {
-                                        if (markMap.get(chatId).equals(ShelterMark.CAT_SHELTER)) {
+                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
                                         } else dogReportMap.get(chatId).setBehavior(text);
 
@@ -222,7 +222,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         //telegramBot.execute(
                                         //  new SendMessage(chatId, "Пришлите фото питомца")
                                         //);
-                                        if (markMap.get(chatId).equals(ShelterMark.DOG_SHELTER)) {
+                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
                                             dogReportRepository.save(dogReportMap.get(chatId));
                                             dogReportMap.remove(chatId);
                                         } else catReportRepository.save(catReportMap.get(chatId));
@@ -280,8 +280,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      */
     private void sendAfterStart(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.CAT.getTitle()).callbackData(Buttons.CAT.getTitle()),
-                new InlineKeyboardButton(Buttons.DOG.getTitle()).callbackData(Buttons.DOG.getTitle()));
+        keyboardMarkup.addRow(new InlineKeyboardButton(Buttons.CAT.getTitle()).callbackData(Buttons.CAT.toString()),
+                new InlineKeyboardButton(Buttons.DOG.getTitle()).callbackData(Buttons.DOG.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Привет! Я помогу тебе выбрать питомца. " +
@@ -302,13 +302,12 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         String dogShelter = "Добро пожаловать в приют для собак. Выберите нужный раздел";
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.SHELTER_INFO.getTitle()).callbackData(Buttons.SHELTER_INFO.getTitle()),
-                new InlineKeyboardButton(Buttons.TAKE_PET.getTitle()).callbackData(Buttons.TAKE_PET.getTitle()));
+                new InlineKeyboardButton(Buttons.INFO.getTitle()).callbackData(Buttons.INFO.toString()),
+                new InlineKeyboardButton(Buttons.TAKE.getTitle()).callbackData(Buttons.TAKE.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.REPORT.getTitle()).callbackData(Buttons.REPORT.getTitle()));
-        if (shelterMark.equals(ShelterMark.CAT_SHELTER)) {
-            telegramBot.execute(
-                    new SendMessage(
+                new InlineKeyboardButton(Buttons.REPORT.getTitle()).callbackData(Buttons.REPORT.toString()));
+        if (shelterMark.equals(ShelterMark.CAT)) {
+            telegramBot.execute(new SendMessage(
                             chatId, catShelter).replyMarkup(keyboardMarkup));
         } else telegramBot.execute(
                 new SendMessage(
@@ -318,51 +317,46 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     /**
      * Метод, который отвечает на нажатие кнопки выбора раздела у приюта
      *
-     * @param chatId - идентификатор чата, в котором вызвана команда
+     * @param update - принимаемый update
      */
-    private void sendAfterPetInfo(Long chatId) {
+    private void sendAfterPetInfo(Update update) {
+        Long chatId = update.callbackQuery().from().id();
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.INFO_SHELTER.getTitle()).callbackData(Buttons.INFO_SHELTER.getTitle()));
+                new InlineKeyboardButton(Buttons.SHELTER.getTitle()).callbackData(Buttons.SHELTER.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.SAFETY_SHELTER.getTitle()).callbackData(Buttons.SAFETY_SHELTER.getTitle()));
+                new InlineKeyboardButton(Buttons.SAFETY_SHELTER.getTitle()).callbackData(Buttons.SAFETY_SHELTER.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.OPENING_DIRECTIONS.getTitle()).callbackData(Buttons.OPENING_DIRECTIONS.getTitle()));
+                new InlineKeyboardButton(Buttons.CONTACTS.getTitle()).callbackData(Buttons.CONTACTS.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.CONTACT_REGISTRATION_CAR.getTitle()).callbackData(Buttons.CONTACT_REGISTRATION_CAR.getTitle()));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.CONTACTS.getTitle()).callbackData(Buttons.CONTACTS.getTitle()));
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.CONTACTS_FOR_COMMUNICATION.getTitle()).callbackData(Buttons.CONTACTS_FOR_COMMUNICATION.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK_CONTACTS.getTitle()).callbackData(Buttons.BACK_CONTACTS.toString()));
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup)
-
-        );
+                        chatId, "Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup));
     }
 
     private void adoptPetFromShelter(Long chatId, ShelterMark shelterMark) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.INTRODUCING.getTitle()).callbackData(Buttons.INTRODUCING.getTitle()));
+                new InlineKeyboardButton(Buttons.INTRODUCING.getTitle()).callbackData(Buttons.INTRODUCING.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.REQUIRED_DOCUMENTS.getTitle()).callbackData(Buttons.REQUIRED_DOCUMENTS.getTitle()));
+                new InlineKeyboardButton(Buttons.DOCUMENTS.getTitle()).callbackData(Buttons.DOCUMENTS.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.TRANSPORT_RECOMMENDATIONS.getTitle()).callbackData(Buttons.TRANSPORT_RECOMMENDATIONS.getTitle()));
+                new InlineKeyboardButton(Buttons.TRANSPORTATION.getTitle()).callbackData(Buttons.TRANSPORTATION.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION.getTitle()).callbackData(Buttons.HOUSE_FOR_THE_PUPPY_RECOMMENDATION.getTitle()));
+                new InlineKeyboardButton(Buttons.PUPPY_HOME.getTitle()).callbackData(Buttons.PUPPY_HOME.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION.getTitle()).callbackData(Buttons.HOUSE_FOR_ADULT_ANIMAL_RECOMMENDATION.getTitle()));
+                new InlineKeyboardButton(Buttons.PET_HOME.getTitle()).callbackData(Buttons.PET_HOME.toString()));
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION.getTitle()).callbackData(Buttons.HOUSE_FOR_ANIMAL_WITH_DISABILITIES_RECOMMENDATION.getTitle()));
-        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+                new InlineKeyboardButton(Buttons.DISABLED_PET_HOME.getTitle()).callbackData(Buttons.DISABLED_PET_HOME.toString()));
+        if (shelterMark.equals(ShelterMark.DOG)) {
             keyboardMarkup.addRow(
-                    new InlineKeyboardButton(Buttons.CYNOLOGIST_ADVICE_DOG.getTitle()).callbackData(Buttons.CYNOLOGIST_ADVICE_DOG.getTitle()));
+                    new InlineKeyboardButton(Buttons.CYNOLOGIST_ADVICE.getTitle()).callbackData(Buttons.CYNOLOGIST_ADVICE.toString()));
             keyboardMarkup.addRow(
-                    new InlineKeyboardButton(Buttons.LIST_OF_VERIFIED_CATENORS_DOG.getTitle()).callbackData(Buttons.LIST_OF_VERIFIED_CATENORS_DOG.getTitle()));
+                    new InlineKeyboardButton(Buttons.LIST_OF_CYNOLOGISTS.getTitle()).callbackData(Buttons.LIST_OF_CYNOLOGISTS.toString()));
         }
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.REASONS_FOR_REFUSAL.getTitle()).callbackData(Buttons.REASONS_FOR_REFUSAL.getTitle()));
+                new InlineKeyboardButton(Buttons.REASONS_FOR_REFUSAL.getTitle()).callbackData(Buttons.REASONS_FOR_REFUSAL.toString()));
 
         telegramBot.execute(
                 new SendMessage(
@@ -377,8 +371,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.getTitle()));
-        if (shelterMark.equals(ShelterMark.CAT_SHELTER)) {
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.toString()));
+        if (shelterMark.equals(ShelterMark.CAT)) {
             text = "кошек";
         } else text = "собак";
         telegramBot.execute(
@@ -397,10 +391,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.getTitle()));
-        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
-            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.";
-        } else text = "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.";
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.toString()));
+        if (shelterMark.equals(ShelterMark.DOG)) {
+            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.\n" +
+                    "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
+                    "8-(912)-***-**-**";
+        } else text = "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.\n" +
+                "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
+                "8-(910)-***-**-**";
         telegramBot.execute(
                 new SendMessage(
                         chatId,
@@ -415,28 +413,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         );
     }
 
-    private void contactPassForTheCar(Long chatId, ShelterMark shelterMark) {
-        String text;
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.getTitle()));
-        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
-            text = "Пункт охраны:\n" +
-                    "Телефон: 8-(912)-***-**-**\n" +
-                    "Для оформления пропуска на автомобиль\n ";
-        } else text = "Пункт охраны:\n" +
-                "Телефон: 8-(910)-***-**-**\n" +
-                "Для оформления пропуска на автомобиль\n ";
-        telegramBot.execute(
-                new SendMessage(
-                        chatId, text).replyMarkup(keyboardMarkup)
-        );
-    }
-
     private void SafetyShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Работники и посетители приюта обязаны соблюдать правила личной гигиены, в том числе" +
@@ -453,8 +433,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(String.valueOf(Buttons.BACK1)));
-        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
+        if (shelterMark.equals(ShelterMark.DOG)) {
             text = "1. Спросите у хозяина\n" +
                     "Уточните у человека, не против ли будет он и его питомец, если вы познакомитесь. Как правило, люди знают своих животных и могут предположить, в настроении ли оно погладиться.\n" +
                     "Если хозяин против - вежливо благодарим и уходим, это его право. Если хозяин за - переходим к следующему пункту. Тоже самое, если хотим пообщаться с беспризорным животным.\n" +
@@ -489,7 +469,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void RequiredDocuments(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Перечень документов на получение животного из приюта:\n" +
@@ -505,7 +485,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void TransportRecommendations(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Tребования к перевозке домашних животных в автомобиле:\n" +
@@ -526,8 +506,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
-        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
+        if (shelterMark.equals(ShelterMark.DOG)) {
             text = "щенка";
         } else text = "котенка";
         telegramBot.execute(
@@ -553,8 +533,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         String text;
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
-        if (shelterMark.equals(ShelterMark.DOG_SHELTER)) {
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
+        if (shelterMark.equals(ShelterMark.DOG)) {
             text = "Дом для взрослого животного. Рекомендации.\n" +
                     "1. Дайте собаке время на адаптацию в новом доме.\n" +
                     "Допустим, вы приняли решение забрать собаку. Не имеет значения, насколько обдуманным был ваш выбор – в любом случае вы гораздо лучше собаки" +
@@ -612,7 +592,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void HouseForAnimalWithDisabilitiesRecomendation(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Дом для животного с ограниченными возможностями. Рекомендации.\n" +
@@ -648,7 +628,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void CynologistAdvice(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Советы кинолога.\n" +
@@ -707,7 +687,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void ListOfVerifiedCatenors(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Список проверенных кинологов.\n" +
@@ -722,7 +702,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private void ReasonsForRefusal(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
-                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.getTitle()));
+                new InlineKeyboardButton(Buttons.BACK1.getTitle()).callbackData(Buttons.BACK1.toString()));
         telegramBot.execute(
                 new SendMessage(
                         chatId, "Причины отказа.\n" +
