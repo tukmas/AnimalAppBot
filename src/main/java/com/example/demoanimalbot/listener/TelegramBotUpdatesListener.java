@@ -38,7 +38,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final DogRepository dogRepository;
     private final CatRepository catRepository;
     private final Map<Long, AnswerStatus> statusMap = new HashMap<>();
-    private final Map<Long, ShelterMark> markMap = new HashMap<>();
+    private Map<Long, ShelterMark> markMap = new HashMap<>();
     private final Map<Long, CatReport> catReportMap = new HashMap<>();
     private final Map<Long, DogReport> dogReportMap = new HashMap<>();
     private final PhotoService photoService;
@@ -75,6 +75,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             String data = update.callbackQuery().data();
                             Long chatId = update.callbackQuery().from().id();
                             String userName = update.callbackQuery().from().firstName();
+
+                            statusMap.remove(chatId);
                             if (data.equals(Buttons.CAT.toString())) {
                                 if (userCatRepository.findByChatId(chatId) == null) {
                                     UserCat user = new UserCat(userName, chatId);
@@ -96,7 +98,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 sendAfterPetInfo(update);
                             }
                             if (data.equals(Buttons.TAKE.toString())) {
-                                adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
+                                adoptPetFromShelter(update.callbackQuery().from().id());
                             }
                             if (data.equals(Buttons.REPORT.toString())) {
                                 sendReport(update);
@@ -110,14 +112,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             if (data.equals(Buttons.CONTACTS.toString())) {
                                 OpeningDirections(update.callbackQuery().from().id(), markMap.get(chatId));
                             }
-                            //if (data.equals(Buttons.CONTACT_REGISTRATION_CAR.getTitle())) {
-                            //  contactPassForTheCar(update.callbackQuery().from().id(), markMap.get(chatId));
-                            //}
+
                             if (data.equals(Buttons.SAFETY_SHELTER.toString())) {
                                 SafetyShelter(update.callbackQuery().from().id());
                             }
                             if (data.equals(Buttons.BACK.toString())) {
                                 sendAfterPetInfo(update);
+                            }
+                            if (data.equals(Buttons.BACK_CONTACTS.toString())) {
+                                sendContacts(update);
                             }
 
 //                            3 Этап
@@ -150,7 +153,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 ReasonsForRefusal(update.callbackQuery().from().id());
                             }
                             if (data.equals(Buttons.BACK1.toString())) {
-                                adoptPetFromShelter(update.callbackQuery().from().id(), markMap.get(chatId));
+                                adoptPetFromShelter(update.callbackQuery().from().id());
                             }
 
                         }
@@ -216,23 +219,57 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                     case SEND_BEHAVIOR -> {
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
-                                        } else dogReportMap.get(chatId).setBehavior(text);
+                                            catReportRepository.save(catReportMap.get(chatId));
+                                            catReportMap.remove(chatId);
+                                        } else
+                                            dogReportMap.get(chatId).setBehavior(text);
+                                        dogReportRepository.save(dogReportMap.get(chatId));
+                                        dogReportMap.remove(chatId);
 
                                         //statusMap.put(chatId, AnswerStatus.SEND_FOTO);
                                         //telegramBot.execute(
                                         //  new SendMessage(chatId, "Пришлите фото питомца")
                                         //);
-                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
-                                            dogReportRepository.save(dogReportMap.get(chatId));
-                                            dogReportMap.remove(chatId);
-                                        } else catReportRepository.save(catReportMap.get(chatId));
-                                        catReportMap.remove(chatId);
-
                                         telegramBot.execute(
                                                 new SendMessage(chatId, "Спасибо. Ваш отчет отправлен на проверку волонтеру.")
                                         );
                                         statusMap.remove(chatId);
 
+                                    }
+                                    case SEND_PHONENUMBER -> {
+                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+                                            UserCat userCat = userCatRepository.findByChatId(chatId);
+                                            userCat.setPhoneNumber(text);
+                                            userCatRepository.save(userCat);
+
+                                        }
+                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                            UserDog userDog = userDogRepository.findByChatId(chatId);
+                                            userDog.setPhoneNumber(text);
+                                            userDogRepository.save(userDog);
+                                        }
+
+                                        statusMap.put(chatId, AnswerStatus.SEND_EMAIL);
+                                        telegramBot.execute(
+                                                new SendMessage(chatId, "Введит адрес Вашей электронной почты")
+                                        );
+                                    }
+                                    case SEND_EMAIL -> {
+                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+                                            UserCat userCat = userCatRepository.findByChatId(chatId);
+                                            userCat.setEmail(text);
+                                            userCatRepository.save(userCat);
+
+                                        }
+                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                            UserDog userDog = userDogRepository.findByChatId(chatId);
+                                            userDog.setEmail(text);
+                                            userDogRepository.save(userDog);
+                                        }
+                                        telegramBot.execute(
+                                                new SendMessage(chatId, "Спасибо. Ваши данные записаны.")
+                                        );
+                                        statusMap.remove(chatId);
                                     }
                                 }
                             }
@@ -249,6 +286,12 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             logger.error(e.getMessage(), e);
         }
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    }
+
+    private void sendContacts(Update update) {
+        Long chatId = update.callbackQuery().from().id();
+        statusMap.put(chatId, AnswerStatus.SEND_PHONENUMBER);
+        telegramBot.execute(new SendMessage(chatId, "Введите Ваш номер телефона:"));
     }
 
     private void sendMessage(Long chatId, String message) {
@@ -308,7 +351,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 new InlineKeyboardButton(Buttons.REPORT.getTitle()).callbackData(Buttons.REPORT.toString()));
         if (shelterMark.equals(ShelterMark.CAT)) {
             telegramBot.execute(new SendMessage(
-                            chatId, catShelter).replyMarkup(keyboardMarkup));
+                    chatId, catShelter).replyMarkup(keyboardMarkup));
         } else telegramBot.execute(
                 new SendMessage(
                         chatId, dogShelter).replyMarkup(keyboardMarkup));
@@ -335,7 +378,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                         chatId, "Выберите нужный раздел, чтобы узнать интересующую Вас информацию").replyMarkup(keyboardMarkup));
     }
 
-    private void adoptPetFromShelter(Long chatId, ShelterMark shelterMark) {
+    private void adoptPetFromShelter(Long chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.INTRODUCING.getTitle()).callbackData(Buttons.INTRODUCING.toString()));
@@ -349,7 +392,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 new InlineKeyboardButton(Buttons.PET_HOME.getTitle()).callbackData(Buttons.PET_HOME.toString()));
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.DISABLED_PET_HOME.getTitle()).callbackData(Buttons.DISABLED_PET_HOME.toString()));
-        if (shelterMark.equals(ShelterMark.DOG)) {
+        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
             keyboardMarkup.addRow(
                     new InlineKeyboardButton(Buttons.CYNOLOGIST_ADVICE.getTitle()).callbackData(Buttons.CYNOLOGIST_ADVICE.toString()));
             keyboardMarkup.addRow(
@@ -357,6 +400,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         }
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.REASONS_FOR_REFUSAL.getTitle()).callbackData(Buttons.REASONS_FOR_REFUSAL.toString()));
+        keyboardMarkup.addRow(
+                new InlineKeyboardButton(Buttons.BACK_CONTACTS.getTitle()).callbackData(Buttons.BACK_CONTACTS.toString()));
 
         telegramBot.execute(
                 new SendMessage(
