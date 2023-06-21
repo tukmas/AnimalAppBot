@@ -11,11 +11,18 @@ import com.example.demoanimalbot.repository.UserDogRepository;
 import com.pengrad.telegrambot.BotUtils;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
+import org.junit.jupiter.api.*;
+
+import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.model.request.KeyboardButton;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import org.aspectj.lang.annotation.Before;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -26,6 +33,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.event.annotation.BeforeTestExecution;
 
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -115,6 +128,7 @@ class TelegramBotUpdatesListenerTest {
         Assertions.assertEquals(actual.getParameters().get("chat_id"), update.message().chat().id());
         Assertions.assertEquals(actual.getParameters().get("text"),
                 "Привет! Я помогу тебе выбрать питомца. " +
+
                         "Нажмите кнопку ниже, чтобы перейти в приют," +
                         " в котором живут кошки или собаки");
     }
@@ -126,9 +140,11 @@ class TelegramBotUpdatesListenerTest {
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.INFO.toString()), Update.class);
 
+
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+
         Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
         SendMessage actual = argumentCaptor.getValue();
         InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
@@ -137,6 +153,7 @@ class TelegramBotUpdatesListenerTest {
 
         Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
         Assertions.assertEquals(actual.getParameters().get("text"),
+
                 "Выберите нужный раздел, чтобы узнать интересующую Вас информацию");
 
     }
@@ -584,5 +601,6 @@ class TelegramBotUpdatesListenerTest {
                         "3 Наличие маленьких детей\n" +
                         "4 Съемное жилье\n" +
                         "5 Животное в подарок или для работы");
+
     }
 }

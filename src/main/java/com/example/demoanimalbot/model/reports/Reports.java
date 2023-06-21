@@ -1,5 +1,6 @@
 package com.example.demoanimalbot.model.reports;
 
+import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.model.pets.Pet;
 import com.pengrad.telegrambot.model.PhotoSize;
 import lombok.*;
