@@ -17,10 +17,12 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.KeyboardButton;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.SendResponse;
+import org.aspectj.lang.annotation.Before;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -29,6 +31,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.context.event.annotation.BeforeTestExecution;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -57,6 +60,8 @@ class TelegramBotUpdatesListenerTest {
     @Mock
     private Map<Long, ShelterMark> markMapMock = new HashMap<>();
 
+    private ShelterMark shelterMark;
+
     @Mock
     private DogReport dogReportMock = new DogReport();
     @Mock
@@ -67,6 +72,46 @@ class TelegramBotUpdatesListenerTest {
     @InjectMocks
     private TelegramBotUpdatesListener out;
 
+    @Test
+    void sendContacts() throws URISyntaxException, IOException {
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", Buttons.BACK_CONTACTS.toString()), Update.class);
+
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNull(keyboardMarkup);
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "Введите Ваш номер телефона:");
+    }
+
+
+    @Test
+    void sendReport() throws URISyntaxException, IOException {
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", Buttons.REPORT.toString()), Update.class);
+
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNull(keyboardMarkup);
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "Напишите имя питомца");
+    }
 
     @Test
     void sendAfterStart() throws URISyntaxException, IOException {
@@ -136,23 +181,24 @@ class TelegramBotUpdatesListenerTest {
 
     }
 
+
     @Test
-    void adoptPetFromShelter(Long chatId, ShelterMark shelterMark) throws URISyntaxException, IOException {
-        markMapMock.put(chatId, ShelterMark.DOG);
+    void adoptPetFromShelter() throws URISyntaxException, IOException {
 
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.TAKE.toString()), Update.class);
 
         out.process(Collections.singletonList(update));
-        Mockito.when((markMapMock.get(123L)))
-                .thenReturn(shelterMark);
+
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
         Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
-        SendMessage actual = argumentCaptor.getValue();
-        // InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
 
-        // Assertions.assertNotNull(keyboardMarkup);
+
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNotNull(keyboardMarkup);
 
         Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
         Assertions.assertEquals(actual.getParameters().get("text"),
@@ -163,8 +209,7 @@ class TelegramBotUpdatesListenerTest {
 
     @Test
     void InfoPetShelter() throws URISyntaxException, IOException {
-        markMapMock.put(123L, ShelterMark.CAT);
-        String text;
+
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.SHELTER.toString()), Update.class);
@@ -175,14 +220,13 @@ class TelegramBotUpdatesListenerTest {
         Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
         SendMessage actual = argumentCaptor.getValue();
         InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
-        if (markMapMock.get(123L).equals(ShelterMark.CAT)) {
-            text = "кошек";
-        } else text = "собак";
+        String text1 = (String) actual.getParameters().get("text");
+
         Assertions.assertNotNull(keyboardMarkup);
 
         Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
         Assertions.assertEquals(actual.getParameters().get("text"),
-                "Приют для " + text + " — место содержания бездомных, потерянных или брошенных животных." +
+                "Приют для собак — место содержания бездомных, потерянных или брошенных животных." +
                         " Приюты являются одной из ключевых составляющих защиты животных и выполняют четыре" +
                         " сновных функции: оперативная помощь и забота о животном, включая облегчение страданий посредством ветеринарной" +
                         " помощи или эвтаназии; долгосрочная забота о животном, не нашедшем немедленно старого или нового хозяина; усилия по" +
@@ -192,10 +236,31 @@ class TelegramBotUpdatesListenerTest {
 
     @Test
     void OpeningDirections() throws URISyntaxException, IOException {
-    }
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", Buttons.CONTACTS.toString()), Update.class);
 
-    @Test
-    void contactPassForTheCar() throws URISyntaxException, IOException {
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNotNull(keyboardMarkup);
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "Понедельник  7:00 — 20:00\n" +
+                        "Вторник  7:00 — 20:00\n" +
+                        "Среда  7:00 — 20:00\n" +
+                        "Четверг  7:00 — 20:00\n" +
+                        "Пятница  7:00 — 20:00\n" +
+                        "Суббота  7:00 — 20:00\n" +
+                        "Воскресенье  Выходной\n" +
+                        "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.\n" +
+                        "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
+                        "8-(910)-***-**-**");
     }
 
     @Test
@@ -223,7 +288,28 @@ class TelegramBotUpdatesListenerTest {
 
     @Test
     void Introducing() throws URISyntaxException, IOException {
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", Buttons.INTRODUCING.toString()), Update.class);
 
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNotNull(keyboardMarkup);
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "1. Спросите у хозяина\n" +
+                        "Уточните у человека, не против ли будет он и его питомец, если вы познакомитесь. Как правило, люди знают своих животных и могут предположить, в настроении ли оно погладиться.\n" +
+                        "Если хозяин против - вежливо благодарим и уходим, это его право. Если хозяин за - переходим к следующему пункту. Тоже самое, если хотим пообщаться с беспризорным животным.\n" +
+                        "2. Замедление темпа сближения\n" +
+                        "Знаю, вам хочется поскорее дотронуться до шёрстки красавчика или красавицы, но держите себя в руках, подходите медленно, чтобы не напугать кошку. К тому-же быстрое приближение может быть воспринято как агрессия.\n" +
+                        "3. Дайте кошке проявить инициативу\n" +
+                        "Очень важно, чтобы питомец и сам хотел с вами знакомиться, иначе его ждёт только стресс и негативный опыт. А оно вам надо? Мы желаем собакенам добра.\n");
     }
 
     @Test
@@ -284,11 +370,76 @@ class TelegramBotUpdatesListenerTest {
 
     @Test
     void HouseForThePuppyRecommendation() throws URISyntaxException, IOException {
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", Buttons.PUPPY_HOME.toString()), Update.class);
+
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+        String text = "котенка";
+        Assertions.assertNotNull(keyboardMarkup);
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "Дом для " + text + ". Рекомендации.\n" +
+                        "Первое появление " + text + " в доме, как правило, вызывает восторг у домочадцев, однако питомца внезапное" +
+                        " чрезмерное внимание может напугать, поэтому всем следует вести себя сдержанно и знакомиться постепенно." +
+                        " Если у вас есть дети, то объясните им, как правильно брать " + text + "на руки (осторожно, но надежно, двумя руками:" +
+                        " одной — под передние лапы и грудь, другой — под попу и задние лапы) и как вести себя с ним (чрезмерно не беспокоить," +
+                        " в том числе когда он спит, а спать он будет много). Другим домашним животным в доме " + text + "«представить» стоит аккуратно" +
+                        " и постепенно. Дайте им обнюхать друг друга, но внимательно следите за их поведением, чтобы избежать последствий возможной" +
+                        " агрессии.Прежде всего нужно дать питомцу утолить любопытство, обследовать самостоятельно новое жилище. Если в это время он захочет в туалет," +
+                        " то первоначально не стоит его нести в отведенное место, поскольку он еще не достаточно со всем знаком. Когда питомец немного утолит любопытство," +
+                        " можете ознакамливать его с ключевыми местами его обитания — «спальней», «кухней» и туалетом. Покормите малыша из его новых мисочек," +
+                        " пусть понемногу привыкает к ним. Вскоре после кормления он захочет в туалет, поэтому внимательно следите за ним и когда заметите признаки," +
+                        " пересадите " + text + "в лоток (или на пеленку). После туалета отнесите питомца в его укромное место для сна, в лежанку предварительно положите вещь," +
+                        " которую вы взяли из его предыдущего дома");
 
     }
 
     @Test
     void HouseForAdultAnimalRecommendation() throws URISyntaxException, IOException {
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%data%", Buttons.PET_HOME.toString()), Update.class);
+
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+        InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
+
+        Assertions.assertNotNull(keyboardMarkup);
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.callbackQuery().from().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "Дом для взрослого животного. Рекомендации.\n" +
+                        "1. Дайте кошке время на адаптацию в новом доме\n" +
+                        "Допустим, вы приняли решение забрать кошку. Не имеет значения, насколько обдуманным был ваш выбор – в любом случае вы гораздо лучше кошки" +
+                        " понимаете, что происходит. Посмотрите на ситуацию ее глазами: она покинула обжитое место и едет в неизвестность с едва знакомыми существами." +
+                        " Кошка испытывает стресс вне зависимости от того, какой была ее жизнь до этого момента. Новый дом означает новые правила, общение с новыми" +
+                        " людьми требует осторожности. Если желаете кошке добра, по приезду домой оставьте ее в покое, предоставив свободный доступ к воде и корму." +
+                        " Не навязывайте ей свое общество. Кошке потребуется от нескольких часов до нескольких дней, чтобы прийти в себя и оценить обстановку.\n" +
+                        "2. Наблюдайте за поведением кошки\n" +
+                        "Кошка раскрывается в течение одного-двух месяцев. Думаете, только котята грызут мебель и воют в отсутствие хозяев? У вас есть все шансы убедиться" +
+                        " в обратном. Считаете, что выбранной кошке не свойственна агрессия? Я бы все равно старался поначалу обходить острые углы. Вам показалось, что" +
+                        " кошка хорошо поладила с ребенком? Примите во внимание, что она могла быть просто скованна и не решалась высказать недовольство. Заметив проблему," +
+                        " не паникуйте, а свяжитесь со специалистом. Так будет лучше для всех.\n" +
+                        "3. Будьте взрослыми\n" +
+                        "Быть взрослым в моем понимании означает умение трезво оценивать последствия своих решений. Кошка, которую вы берете в приюте, наверняка не будет" +
+                        " похожа ни на одну из ваших предыдущих. Будучи сложившейся личностью, она вряд ли согласится соответствовать образу, который вы себе нарисовали." +
+                        " Попробуйте загнать ее в рамки, и она быстро покажет, что вы и ваша семья не великие благодетели, а пока еще просто остановка на пути." +
+                        "Новичкам не нужно брать заведомо проблемных кошек. Но это не точно. Метис Лапа. Только не подумайте, будто я специально сгущаю краски. Вспомните, как порой " +
+                        "бывает трудно найти общий язык с другим человеком. Невероятно трудно! Хотя, казалось бы, для взаимопонимания нет никаких препятствий – вы принадлежите к одному" +
+                        " виду, одинаково мыслите и говорите на одном языке. А тут речь идет о том, чтобы договориться со сложившейся личностью из иного мира: шанс исправить ситуацию" +
+                        " появится лишь при условии достаточной настойчивости. Вытекающее из этого правило гласит, что новичкам не нужно брать заведомо проблемных кошек. Но это не точно." +
+                        " По моим наблюдениям, некоторые кошки, которых отдали в приют из-за их дурного поведения, в новой семье ведут себя значительно лучше. Почему? Я связываю это с тем," +
+                        " что благодаря переезду разрывается порочный круг привычек кошки и ошибок хозяина");
     }
 
     @Test
