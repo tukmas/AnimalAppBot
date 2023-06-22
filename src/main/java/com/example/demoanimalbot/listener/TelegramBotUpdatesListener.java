@@ -177,7 +177,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         if (markMap.get(chatId).equals(ShelterMark.DOG) &&
                                                 dogRepository.findByUserChatIdAndName(chatId, text) != null) {
                                             Dog dog = dogRepository.findByUserChatIdAndName(chatId, text);
-                                            DogReport dogReport = new DogReport(LocalDateTime.now(), dog);
+                                            LocalDateTime localDateTime = LocalDateTime.now();
+                                            DogReport dogReport = new DogReport(localDateTime, dog);
                                             dogReportMap.put(chatId, dogReport);
                                             statusMap.put(chatId, AnswerStatus.SEND_DIET);
                                             telegramBot.execute(
@@ -186,7 +187,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         if (markMap.get(chatId).equals(ShelterMark.CAT) &&
                                                 catRepository.findByUserChatIdAndName(chatId, text) != null) {
                                             Cat cat = catRepository.findByUserChatIdAndName(chatId, text);
-                                            CatReport catReport = new CatReport(LocalDateTime.now(), cat);
+                                            LocalDateTime localDateTime = LocalDateTime.now();
+                                            CatReport catReport = new CatReport(localDateTime, cat);
                                             catReportMap.put(chatId, catReport);
                                             statusMap.put(chatId, AnswerStatus.SEND_DIET);
                                             telegramBot.execute(
@@ -413,11 +415,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         } else text = "собак";
         telegramBot.execute(
                 new SendMessage(
-                        chatId, "Приют для " + text + " — место содержания бездомных, потерянных или брошенных животных." +
+                        chatId, "Приют для " + text + " — место содержания бездомных," +
+                        " потерянных или брошенных животных." +
                         " Приюты являются одной из ключевых составляющих защиты животных и выполняют четыре" +
-                        " сновных функции: оперативная помощь и забота о животном, включая облегчение страданий посредством ветеринарной" +
-                        " помощи или эвтаназии; долгосрочная забота о животном, не нашедшем немедленно старого или нового хозяина; усилия по" +
-                        " воссоединению потерянного животного с его прежним хозяином; поиск нового места обитания или нового хозяина для" +
+                        " сновных функции: оперативная помощь и забота о животном, включая облегчение страданий" +
+                        " посредством ветеринарной" +
+                        " помощи или эвтаназии; долгосрочная забота о животном, не нашедшем немедленно старого или " +
+                        "нового хозяина; усилия по" +
+                        " воссоединению потерянного животного с его прежним хозяином; поиск нового места обитания " +
+                        "или нового хозяина для" +
                         " бездомного животного").replyMarkup(keyboardMarkup)
 
         );
