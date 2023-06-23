@@ -38,7 +38,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final DogRepository dogRepository;
     private final CatRepository catRepository;
     private final Map<Long, AnswerStatus> statusMap = new HashMap<>();
-    private Map<Long, ShelterMark> markMap = new HashMap<>();
+    private final Map<Long, ShelterMark> markMap = new HashMap<>();
     private final Map<Long, CatReport> catReportMap = new HashMap<>();
     private final Map<Long, DogReport> dogReportMap = new HashMap<>();
     private final PhotoService photoService;
@@ -96,11 +96,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                             if (data.equals(Buttons.INFO.toString())) {
                                 sendAfterPetInfo(update);
+
                             }
                             if (data.equals(Buttons.TAKE.toString())) {
                                 adoptPetFromShelter(update.callbackQuery().from().id());
                             }
+
                             if (data.equals(Buttons.REPORT.toString())) {
+
                                 sendReport(update);
                             }
 
@@ -116,11 +119,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             if (data.equals(Buttons.SAFETY_SHELTER.toString())) {
                                 SafetyShelter(update.callbackQuery().from().id());
                             }
+
                             if (data.equals(Buttons.BACK.toString())) {
                                 sendAfterPetInfo(update);
                             }
                             if (data.equals(Buttons.BACK_CONTACTS.toString())) {
                                 sendContacts(update);
+
                             }
 
 //                            3 Этап
@@ -157,13 +162,21 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                             }
 
                         }
-                        /**
-                         if (update.message().photo() != null) {
-                         Long chatId = update.message().from().id();
-                         if (statusMap.get(chatId).equals(AnswerStatus.SEND_FOTO)) {
-                         }
-                         }
-                         */
+/**
+ if (update.message().photo() != null) {
+ Long chatId = update.message().from().id();
+ if (statusMap.get(chatId).equals(AnswerStatus.SEND_FOTO)) {
+ Photo photo = photoService.uploadPhoto(update, dogReport.getId());
+ dogReport.setPhoto(photo);
+ dogReportRepository.save(dogReport);
+ telegramBot.execute(
+ new SendMessage(chatId, "Спасибо. Ваш отчет отправлен на проверку волонтеру.")
+ );
+ statusMap.remove(chatId);
+ }
+
+ }
+ */
                         if (update.message() != null) {
                             Message message = update.message();
                             Long chatId = message.chat().id();
@@ -174,7 +187,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                                 switch (status) {
                                     case SEND_PET_NAME -> {
+
                                         if (markMap.get(chatId).equals(ShelterMark.DOG) &&
+
                                                 dogRepository.findByUserChatIdAndName(chatId, text) != null) {
                                             Dog dog = dogRepository.findByUserChatIdAndName(chatId, text);
                                             LocalDateTime localDateTime = LocalDateTime.now();
@@ -184,7 +199,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Опишите рацион питомца"));
                                         }
+
                                         if (markMap.get(chatId).equals(ShelterMark.CAT) &&
+
                                                 catRepository.findByUserChatIdAndName(chatId, text) != null) {
                                             Cat cat = catRepository.findByUserChatIdAndName(chatId, text);
                                             LocalDateTime localDateTime = LocalDateTime.now();
@@ -193,13 +210,17 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             statusMap.put(chatId, AnswerStatus.SEND_DIET);
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Опишите рацион питомца"));
+
                                         } else if (!text.contains("/"))
+
                                             telegramBot.execute(
                                                     new SendMessage(chatId, "Питомец с таким именем не найден. Попробуйте еще раз или выберите пункт Меню."));
                                     }
 
                                     case SEND_DIET -> {
+
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+
                                             catReportMap.get(chatId).setDiet(text);
                                         } else dogReportMap.get(chatId).setDiet(text);
 
@@ -209,7 +230,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         );
                                     }
                                     case SEND_WELLBEING -> {
+
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+
                                             catReportMap.get(chatId).setWellBeing(text);
                                         } else dogReportMap.get(chatId).setWellBeing(text);
 
@@ -219,6 +242,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         );
                                     }
                                     case SEND_BEHAVIOR -> {
+
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
 
@@ -228,19 +252,24 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             catReportMap.remove(chatId);
                                         } if (markMap.get(chatId).equals(ShelterMark.DOG)) {
                                             dogReportMap.get(chatId).setBehavior(text);
+
                                             dogReportRepository.save(dogReportMap.get(chatId));
                                             dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().plusDays(1));
                                             dogRepository.save(dogReportMap.get(chatId).getDog());
                                             dogReportMap.remove(chatId);
                                         }
+
                                         //statusMap.put(chatId, AnswerStatus.SEND_FOTO);
                                         //telegramBot.execute(
                                         //  new SendMessage(chatId, "Пришлите фото питомца")
                                         //);
+
+
                                         telegramBot.execute(
                                                 new SendMessage(chatId, "Спасибо. Ваш отчет отправлен на проверку волонтеру.")
                                         );
                                         statusMap.remove(chatId);
+
 
                                     }
                                     case SEND_PHONENUMBER -> {
@@ -277,6 +306,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                                 new SendMessage(chatId, "Спасибо. Ваши данные записаны.")
                                         );
                                         statusMap.remove(chatId);
+
                                     }
                                 }
                             }
@@ -284,7 +314,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 statusMap.remove(chatId);
                                 markMap.remove(chatId);
                                 sendAfterStart(chatId);
-
+                            }
+                            if ("/call_a_volunteer".equals(text)) {
+                                callVolunteer(chatId);
                             }
                         }
                     });
@@ -300,8 +332,16 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         statusMap.put(chatId, AnswerStatus.SEND_PHONENUMBER);
         telegramBot.execute(new SendMessage(chatId, "Введите Ваш номер телефона:"));
     }
+    private void callVolunteer(Long chatId) {
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Связаться с волонтерами можно в телеграме:\n" +
+                        "@tukma\n" +
+                        "@n4rc1ss1sm\n" +
+                        "@vseimenazanyati9\n")
 
-
+        );
+    }
     /**
      * Метод, который отвечает на нажатие кнопки отправить отчет
      */
@@ -311,6 +351,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         statusMap.put(chatId, AnswerStatus.SEND_PET_NAME);
         telegramBot.execute(new SendMessage(chatId, "Напишите имя питомца"));
     }
+
 
     /**
      * Метод, который отвечает на вызов команды /start
@@ -358,8 +399,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
      *
      * @param update - принимаемый update
      */
+
     private void sendAfterPetInfo(Update update) {
         Long chatId = update.callbackQuery().from().id();
+
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.SHELTER.getTitle()).callbackData(Buttons.SHELTER.toString()));
@@ -441,12 +484,22 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.toString()));
         if (shelterMark.equals(markMap.get(chatId))) {
-            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.\n" +
+            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 155.\n" +
+                    "Контакты приюта для собак:\n" +
+                    "Телефон 8-912-***-**-**\n" +
+                    "Email Yandex@yandex.ru).\n" +
                     "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
-                    "8-(912)-***-**-**";
-        } else text = "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.\n" +
+                    "8-(912)-***-**-**\n" +
+                    "Схема проезда:\n" +
+                    "https://yandex.ru/maps/44/izhevsk/house/pushkinskaya_ulitsa_155/YUoYdAZnSkUFQFtsfXRycn5kYQ==/?ll=53.217303%2C56.833275&z=16.81";
+        } else text = "Мы находимся по адресу г.Ижевск, ул.,Баранова 90.\n" +
+                "Контакты приюта для кошек:\n" +
+                "Телефон 8-912-***-**-**\n" +
+                "Email Yandex@yandex.ru).\n" +
                 "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
-                "8-(910)-***-**-**";
+                "8-(910)-***-**-**\n" +
+                "Схема проезда:\n" +
+                "https://yandex.ru/maps/44/izhevsk/house/ulitsa_baranova_90/YUoYdwVlS00PQFtsfXRydX5jYQ==/?indoorLevel=1&ll=53.125288%2C56.834206&z=16.81";
         telegramBot.execute(
                 new SendMessage(
                         chatId,

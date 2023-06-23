@@ -25,9 +25,16 @@ public class Photo {
     private String filePath;
     private long fileSize;
     private String mediaType;
+    private long reportId;
 
     @Lob
     private byte[] preview;
+
+    public Photo(String filePath, long reportId) {
+        this.filePath = filePath;
+        this.reportId = reportId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
