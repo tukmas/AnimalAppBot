@@ -21,13 +21,16 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class TelegramBotUpdatesListener implements UpdatesListener {
@@ -247,14 +250,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                             catReportMap.get(chatId).setBehavior(text);
 
                                             catReportRepository.save(catReportMap.get(chatId));
-                                            catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().plusDays(1));
+                                            catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
                                             catRepository.save(catReportMap.get(chatId).getCat());
                                             catReportMap.remove(chatId);
-                                        } if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                        }
+                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
                                             dogReportMap.get(chatId).setBehavior(text);
 
                                             dogReportRepository.save(dogReportMap.get(chatId));
-                                            dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().plusDays(1));
+                                            dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
                                             dogRepository.save(dogReportMap.get(chatId).getDog());
                                             dogReportMap.remove(chatId);
                                         }
@@ -332,6 +336,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         statusMap.put(chatId, AnswerStatus.SEND_PHONENUMBER);
         telegramBot.execute(new SendMessage(chatId, "Введите Ваш номер телефона:"));
     }
+
     private void callVolunteer(Long chatId) {
         telegramBot.execute(
                 new SendMessage(
@@ -342,6 +347,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         );
     }
+
     /**
      * Метод, который отвечает на нажатие кнопки отправить отчет
      */
@@ -819,4 +825,5 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
 }
