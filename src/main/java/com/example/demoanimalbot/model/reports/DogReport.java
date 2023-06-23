@@ -18,6 +18,7 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
+
 public class DogReport extends Reports {
 
     @ManyToOne

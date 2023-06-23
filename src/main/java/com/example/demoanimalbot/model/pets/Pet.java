@@ -10,6 +10,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -26,7 +27,8 @@ public abstract class Pet {
     private String breed;
     private String description;
     private Status status;
-    private LocalDate dateOfAdoption;
+    private LocalDateTime dateOfAdoption;
+    private LocalDateTime deadlineTime;
 
     public Pet(String name, int age, String breed) {
         this.name = name;
