@@ -24,7 +24,7 @@ public class NotificationTaskTimer {
         this.telegramBot = telegramBot;
     }
 
-    @Scheduled(cron = "* 30 21 * * *")
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void task() {
         catRepository.findAllByDeadlineTime(
                 LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)
