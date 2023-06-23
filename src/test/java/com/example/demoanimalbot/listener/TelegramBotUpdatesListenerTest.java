@@ -1,13 +1,13 @@
 package com.example.demoanimalbot.listener;
 
 import com.example.demoanimalbot.model.keyboardButtons.Buttons;
+import com.example.demoanimalbot.model.pets.Cat;
+import com.example.demoanimalbot.model.pets.Dog;
+import com.example.demoanimalbot.model.reports.CatReport;
 import com.example.demoanimalbot.model.reports.DogReport;
 import com.example.demoanimalbot.model.users.AnswerStatus;
 import com.example.demoanimalbot.model.users.ShelterMark;
-import com.example.demoanimalbot.repository.DogReportRepository;
-import com.example.demoanimalbot.repository.DogRepository;
-import com.example.demoanimalbot.repository.UserCatRepository;
-import com.example.demoanimalbot.repository.UserDogRepository;
+import com.example.demoanimalbot.repository.*;
 import com.pengrad.telegrambot.BotUtils;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
@@ -32,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.event.annotation.BeforeTestExecution;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,25 +52,13 @@ class TelegramBotUpdatesListenerTest {
     @Mock
     private TelegramBot telegramBotMock;
     @Mock
-    private UserDogRepository userDogRepositoryMock;
+    private UserDogRepository userDogRepository;
     @Mock
-    private UserCatRepository userCatRepositoryMock;
+    private UserCatRepository userCatRepository;
     @Mock
-    private DogRepository dogRepositoryMock;
+    private DogRepository dogRepository;
     @Mock
-    private Map<Long, AnswerStatus> statusMapMock = new HashMap<>();
-    @Mock
-    private Map<Long, ShelterMark> markMapMock = new HashMap<>();
-
-    private ShelterMark shelterMark;
-
-    @Mock
-    private DogReport dogReportMock = new DogReport();
-    @Mock
-    private DogReportRepository dogReportRepositoryMock;
-    @Mock
-    private Logger loggerMock = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
-
+    private CatRepository catRepository;
     @InjectMocks
     private TelegramBotUpdatesListener out;
 
@@ -122,6 +112,7 @@ class TelegramBotUpdatesListenerTest {
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+
         Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
         SendMessage actual = argumentCaptor.getValue();
 
@@ -133,6 +124,24 @@ class TelegramBotUpdatesListenerTest {
                         " в котором живут кошки или собаки");
     }
 
+    @Test
+    void askPetName() throws URISyntaxException, IOException {
+        String json = Files.readString(
+                Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.json").toURI()));
+        Update update = BotUtils.fromJson(json.replace("%text%", "n"), Update.class);
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.DOG));
+        ReflectionTestUtils.setField(out, "statusMap", Map.of(123L, AnswerStatus.SEND_PET_NAME));
+        out.process(Collections.singletonList(update));
+
+        ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+
+        Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
+        SendMessage actual = argumentCaptor.getValue();
+
+        Assertions.assertEquals(actual.getParameters().get("chat_id"), update.message().chat().id());
+        Assertions.assertEquals(actual.getParameters().get("text"),
+                "Питомец с таким именем не найден. Попробуйте еще раз или выберите пункт Меню.");
+    }
     @Test
     void sendAfterPetInfo() throws URISyntaxException, IOException {
 
@@ -188,7 +197,7 @@ class TelegramBotUpdatesListenerTest {
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.TAKE.toString()), Update.class);
-
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.DOG));
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
@@ -213,14 +222,15 @@ class TelegramBotUpdatesListenerTest {
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.SHELTER.toString()), Update.class);
-
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.DOG));
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
+
         Mockito.verify(telegramBotMock).execute(argumentCaptor.capture());
         SendMessage actual = argumentCaptor.getValue();
         InlineKeyboardMarkup keyboardMarkup = (InlineKeyboardMarkup) actual.getParameters().get("reply_markup");
-        String text1 = (String) actual.getParameters().get("text");
+
 
         Assertions.assertNotNull(keyboardMarkup);
 
@@ -239,7 +249,7 @@ class TelegramBotUpdatesListenerTest {
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.CONTACTS.toString()), Update.class);
-
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.CAT));
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
@@ -261,6 +271,7 @@ class TelegramBotUpdatesListenerTest {
                         "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.\n" +
                         "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
                         "8-(910)-***-**-**");
+
     }
 
     @Test
@@ -291,7 +302,7 @@ class TelegramBotUpdatesListenerTest {
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.INTRODUCING.toString()), Update.class);
-
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.CAT));
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
@@ -373,7 +384,7 @@ class TelegramBotUpdatesListenerTest {
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.PUPPY_HOME.toString()), Update.class);
-
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.CAT));
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
@@ -406,7 +417,7 @@ class TelegramBotUpdatesListenerTest {
         String json = Files.readString(
                 Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.callbackquery.json").toURI()));
         Update update = BotUtils.fromJson(json.replace("%data%", Buttons.PET_HOME.toString()), Update.class);
-
+        ReflectionTestUtils.setField(out, "markMap", Map.of(123L, ShelterMark.CAT));
         out.process(Collections.singletonList(update));
 
         ArgumentCaptor<SendMessage> argumentCaptor = ArgumentCaptor.forClass(SendMessage.class);
