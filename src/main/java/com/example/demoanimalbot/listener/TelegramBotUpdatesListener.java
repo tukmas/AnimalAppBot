@@ -306,7 +306,9 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                 statusMap.remove(chatId);
                                 markMap.remove(chatId);
                                 sendAfterStart(chatId);
-
+                            }
+                            if ("/call_a_volunteer".equals(text)) {
+                                callVolunteer(chatId);
                             }
                         }
                     });
@@ -322,8 +324,16 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         statusMap.put(chatId, AnswerStatus.SEND_PHONENUMBER);
         telegramBot.execute(new SendMessage(chatId, "Введите Ваш номер телефона:"));
     }
+    private void callVolunteer(Long chatId) {
+        telegramBot.execute(
+                new SendMessage(
+                        chatId, "Связаться с волонтерами можно в телеграме:\n" +
+                        "@tukma\n" +
+                        "@n4rc1ss1sm\n" +
+                        "@vseimenazanyati9\n")
 
-
+        );
+    }
     /**
      * Метод, который отвечает на нажатие кнопки отправить отчет
      */
@@ -462,12 +472,22 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         keyboardMarkup.addRow(
                 new InlineKeyboardButton(Buttons.BACK.getTitle()).callbackData(Buttons.BACK.toString()));
         if (shelterMark.equals(markMap.get(chatId))) {
-            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 99.\n" +
+            text = "Мы находимся по адресу г.Ижевск, ул.Пушкинская дом 155.\n" +
+                    "Контакты приюта для собак:\n" +
+                    "Телефон 8-912-***-**-**\n" +
+                    "Email Yandex@yandex.ru).\n" +
                     "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
-                    "8-(912)-***-**-**";
-        } else text = "Мы находимся по адресу г.Ижевск, ул.Лермонтова дом 1.\n" +
+                    "8-(912)-***-**-**\n" +
+                    "Схема проезда:\n" +
+                    "https://yandex.ru/maps/44/izhevsk/house/pushkinskaya_ulitsa_155/YUoYdAZnSkUFQFtsfXRycn5kYQ==/?ll=53.217303%2C56.833275&z=16.81";
+        } else text = "Мы находимся по адресу г.Ижевск, ул.,Баранова 90.\n" +
+                "Контакты приюта для кошек:\n" +
+                "Телефон 8-912-***-**-**\n" +
+                "Email Yandex@yandex.ru).\n" +
                 "Телефон пункта охраны для оформления пропуска на автомобиль:\n" +
-                "8-(910)-***-**-**";
+                "8-(910)-***-**-**\n" +
+                "Схема проезда:\n" +
+                "https://yandex.ru/maps/44/izhevsk/house/ulitsa_baranova_90/YUoYdwVlS00PQFtsfXRydX5jYQ==/?indoorLevel=1&ll=53.125288%2C56.834206&z=16.81";
         telegramBot.execute(
                 new SendMessage(
                         chatId,
