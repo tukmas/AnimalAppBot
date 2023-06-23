@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @Entity
+
 public class CatReport extends Reports {
 
     @ManyToOne

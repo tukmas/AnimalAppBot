@@ -11,6 +11,8 @@ import com.example.demoanimalbot.repository.UserCatRepository;
 import com.example.demoanimalbot.repository.UserDogRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,9 +62,12 @@ public class PetService {
         Optional<UserCat> userCat = Optional.of(userCatRepository.findById(userId).orElse(new UserCat()));
         cat.get().setStatus(Status.PROBATION);
         cat.get().setUser(userCat.get());
+        cat.get().setDateOfAdoption(LocalDateTime.now());
+        cat.get().setDeadlineTime(cat.get().getDateOfAdoption().plusDays(1));
 
         return catRepository.save(cat.get());
     }
+
     /**
      * Метод позволяет забрать собаку из приюта.
      * При этом меняется статус питомца с SHELTER на PROBATION
@@ -77,6 +82,8 @@ public class PetService {
         Optional<UserDog> userDog = Optional.of(userDogRepository.findById(userId).orElse(new UserDog()));
         dog.get().setStatus(Status.PROBATION);
         dog.get().setUser(userDog.get());
+        dog.get().setDateOfAdoption(LocalDateTime.now());
+        dog.get().setDeadlineTime(dog.get().getDateOfAdoption().plusDays(1));
 
         return dogRepository.save(dog.get());
     }

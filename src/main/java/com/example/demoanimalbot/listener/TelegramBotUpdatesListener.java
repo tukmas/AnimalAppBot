@@ -221,13 +221,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                     case SEND_BEHAVIOR -> {
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
-                                            catReportRepository.save(catReportMap.get(chatId));
-                                            catReportMap.remove(chatId);
-                                        } else
-                                            dogReportMap.get(chatId).setBehavior(text);
-                                        dogReportRepository.save(dogReportMap.get(chatId));
-                                        dogReportMap.remove(chatId);
 
+                                            catReportRepository.save(catReportMap.get(chatId));
+                                            catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().plusDays(1));
+                                            catRepository.save(catReportMap.get(chatId).getCat());
+                                            catReportMap.remove(chatId);
+                                        } if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                            dogReportMap.get(chatId).setBehavior(text);
+                                            dogReportRepository.save(dogReportMap.get(chatId));
+                                            dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().plusDays(1));
+                                            dogRepository.save(dogReportMap.get(chatId).getDog());
+                                            dogReportMap.remove(chatId);
+                                        }
                                         //statusMap.put(chatId, AnswerStatus.SEND_FOTO);
                                         //telegramBot.execute(
                                         //  new SendMessage(chatId, "Пришлите фото питомца")
