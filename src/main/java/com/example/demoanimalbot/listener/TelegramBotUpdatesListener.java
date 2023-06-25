@@ -31,6 +31,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -280,7 +281,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                                 if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                                     catReportMap.get(chatId).setPhoto(photo);
                                                     catReportRepository.save(catReportMap.get(chatId));
-                                                    catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().plusDays(1));
+                                                    catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
                                                     catRepository.save(catReportMap.get(chatId).getCat());
                                                     catReportMap.remove(chatId);
                                                 }
@@ -288,7 +289,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                                     dogReportMap.get(chatId).setPhoto(photo);
 
                                                     dogReportRepository.save(dogReportMap.get(chatId));
-                                                    dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().plusDays(1));
+                                                    dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
                                                     dogRepository.save(dogReportMap.get(chatId).getDog());
                                                     dogReportMap.remove(chatId);
                                                 }
