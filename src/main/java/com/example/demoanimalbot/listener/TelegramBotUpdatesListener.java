@@ -24,16 +24,21 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetFileResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class TelegramBotUpdatesListener implements UpdatesListener {
@@ -252,7 +257,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
-
 
                                         } else dogReportMap.get(chatId).setBehavior(text);
                                         statusMap.put(chatId, AnswerStatus.SEND_FOTO);
@@ -853,4 +857,5 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 ).replyMarkup(keyboardMarkup)
         );
     }
+
 }
