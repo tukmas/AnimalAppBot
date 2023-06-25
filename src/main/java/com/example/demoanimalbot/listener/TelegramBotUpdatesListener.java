@@ -5,6 +5,7 @@ import com.example.demoanimalbot.model.pets.Cat;
 import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.model.reports.CatReport;
 import com.example.demoanimalbot.model.reports.DogReport;
+import com.example.demoanimalbot.model.reports.Photo;
 import com.example.demoanimalbot.model.users.AnswerStatus;
 import com.example.demoanimalbot.model.users.ShelterMark;
 import com.example.demoanimalbot.model.users.UserCat;
@@ -14,17 +15,24 @@ import com.example.demoanimalbot.service.PhotoService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.request.GetFile;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.SendResponse;
+import com.pengrad.telegrambot.response.GetFileResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
+
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -40,6 +48,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final UserCatRepository userCatRepository;
     private final DogRepository dogRepository;
     private final CatRepository catRepository;
+    private final PhotoRepository photoRepository;
     private final Map<Long, AnswerStatus> statusMap = new HashMap<>();
     private final Map<Long, ShelterMark> markMap = new HashMap<>();
     private final Map<Long, CatReport> catReportMap = new HashMap<>();
@@ -49,12 +58,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final CatReportRepository catReportRepository;
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserDogRepository userDogRepository, UserCatRepository userCatRepository, DogRepository dogRepository, CatRepository catRepository, PhotoService photoService, DogReportRepository dogReportRepository, CatReportRepository catReportRepository) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, UserDogRepository userDogRepository, UserCatRepository userCatRepository, DogRepository dogRepository, CatRepository catRepository, PhotoRepository photoRepository, PhotoService photoService, DogReportRepository dogReportRepository, CatReportRepository catReportRepository) {
         this.telegramBot = telegramBot;
         this.userDogRepository = userDogRepository;
         this.userCatRepository = userCatRepository;
         this.dogRepository = dogRepository;
         this.catRepository = catRepository;
+        this.photoRepository = photoRepository;
         this.photoService = photoService;
         this.dogReportRepository = dogReportRepository;
         this.catReportRepository = catReportRepository;
@@ -235,7 +245,6 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                     case SEND_WELLBEING -> {
 
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
-
                                             catReportMap.get(chatId).setWellBeing(text);
                                         } else dogReportMap.get(chatId).setWellBeing(text);
 
@@ -249,87 +258,110 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
 
-                                            catReportRepository.save(catReportMap.get(chatId));
-                                            catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
-                                            catRepository.save(catReportMap.get(chatId).getCat());
-                                            catReportMap.remove(chatId);
-                                        }
-                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
-                                            dogReportMap.get(chatId).setBehavior(text);
-
-                                            dogReportRepository.save(dogReportMap.get(chatId));
-                                            dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
-                                            dogRepository.save(dogReportMap.get(chatId).getDog());
-                                            dogReportMap.remove(chatId);
-                                        }
-
-                                        //statusMap.put(chatId, AnswerStatus.SEND_FOTO);
-                                        //telegramBot.execute(
-                                        //  new SendMessage(chatId, "Пришлите фото питомца")
-                                        //);
-
-
+                                        } else dogReportMap.get(chatId).setBehavior(text);
+                                        statusMap.put(chatId, AnswerStatus.SEND_FOTO);
                                         telegramBot.execute(
-                                                new SendMessage(chatId, "Спасибо. Ваш отчет отправлен на проверку волонтеру.")
-                                        );
-                                        statusMap.remove(chatId);
-
-
-                                    }
-                                    case SEND_PHONENUMBER -> {
-                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
-                                            UserCat userCat = userCatRepository.findByChatId(chatId);
-                                            userCat.setPhoneNumber(text);
-                                            userCatRepository.save(userCat);
-
-                                        }
-                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
-                                            UserDog userDog = userDogRepository.findByChatId(chatId);
-                                            userDog.setPhoneNumber(text);
-                                            userDogRepository.save(userDog);
-                                        }
-
-                                        statusMap.put(chatId, AnswerStatus.SEND_EMAIL);
-                                        telegramBot.execute(
-                                                new SendMessage(chatId, "Введит адрес Вашей электронной почты")
+                                                new SendMessage(chatId, "Пришлите фото питомца")
                                         );
                                     }
-                                    case SEND_EMAIL -> {
-                                        if (markMap.get(chatId).equals(ShelterMark.CAT)) {
-                                            UserCat userCat = userCatRepository.findByChatId(chatId);
-                                            userCat.setEmail(text);
-                                            userCatRepository.save(userCat);
+                                    case SEND_FOTO -> {
+                                        PhotoSize[] photoSizes = update.message().photo();
+                                        PhotoSize photoSize = photoSizes[1];
+                                        GetFileResponse getFileResponse = telegramBot.execute(new GetFile(photoSize.fileId()));
+                                        if (getFileResponse.isOk()) {
+                                            try {
+                                                String extension = StringUtils.getFilenameExtension(getFileResponse.file().filePath());
+                                                String mediaType = switch (extension) {
+                                                    case "png" -> MediaType.IMAGE_PNG_VALUE;
+                                                    case "jpg", "jpeg" -> MediaType.IMAGE_JPEG_VALUE;
+                                                    case "gif" -> MediaType.IMAGE_GIF_VALUE;
+                                                    default -> "image/*";
+                                                };
+                                                byte[] data = telegramBot.getFileContent(getFileResponse.file());
 
+                                                Photo photo = new Photo(mediaType, data);
+                                                photoRepository.save(photo);
+                                                if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+                                                    catReportMap.get(chatId).setPhoto(photo);
+                                                    catReportRepository.save(catReportMap.get(chatId));
+                                                    catReportMap.get(chatId).getCat().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
+                                                    catRepository.save(catReportMap.get(chatId).getCat());
+                                                    catReportMap.remove(chatId);
+                                                }
+                                                if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                                    dogReportMap.get(chatId).setPhoto(photo);
+
+                                                    dogReportRepository.save(dogReportMap.get(chatId));
+                                                    dogReportMap.get(chatId).getDog().setDeadlineTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusDays(1));
+                                                    dogRepository.save(dogReportMap.get(chatId).getDog());
+                                                    dogReportMap.remove(chatId);
+                                                }
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            telegramBot.execute(
+                                                    new SendMessage(chatId, "Спасибо. Ваш отчет отправлен на проверку волонтеру.")
+                                            );
+                                            statusMap.remove(chatId);
                                         }
-                                        if (markMap.get(chatId).equals(ShelterMark.DOG)) {
-                                            UserDog userDog = userDogRepository.findByChatId(chatId);
-                                            userDog.setEmail(text);
-                                            userDogRepository.save(userDog);
-                                        }
-                                        telegramBot.execute(
-                                                new SendMessage(chatId, "Спасибо. Ваши данные записаны.")
-                                        );
-                                        statusMap.remove(chatId);
+                                    }
+
+                                case SEND_PHONENUMBER -> {
+                                    if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+                                        UserCat userCat = userCatRepository.findByChatId(chatId);
+                                        userCat.setPhoneNumber(text);
+                                        userCatRepository.save(userCat);
 
                                     }
+                                    if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                        UserDog userDog = userDogRepository.findByChatId(chatId);
+                                        userDog.setPhoneNumber(text);
+                                        userDogRepository.save(userDog);
+                                    }
+
+                                    statusMap.put(chatId, AnswerStatus.SEND_EMAIL);
+                                    telegramBot.execute(
+                                            new SendMessage(chatId, "Введит адрес Вашей электронной почты")
+                                    );
+                                }
+                                case SEND_EMAIL -> {
+                                    if (markMap.get(chatId).equals(ShelterMark.CAT)) {
+                                        UserCat userCat = userCatRepository.findByChatId(chatId);
+                                        userCat.setEmail(text);
+                                        userCatRepository.save(userCat);
+
+                                    }
+                                    if (markMap.get(chatId).equals(ShelterMark.DOG)) {
+                                        UserDog userDog = userDogRepository.findByChatId(chatId);
+                                        userDog.setEmail(text);
+                                        userDogRepository.save(userDog);
+                                    }
+                                    telegramBot.execute(
+                                            new SendMessage(chatId, "Спасибо. Ваши данные записаны.")
+                                    );
+                                    statusMap.remove(chatId);
+
                                 }
                             }
-                            if ("/start".equals(text)) {
-                                statusMap.remove(chatId);
-                                markMap.remove(chatId);
-                                sendAfterStart(chatId);
-                            }
-                            if ("/call_a_volunteer".equals(text)) {
-                                callVolunteer(chatId);
-                            }
                         }
-                    });
-        } catch (
-                Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        return UpdatesListener.CONFIRMED_UPDATES_ALL;
+                        if ("/start".equals(text)) {
+                            statusMap.remove(chatId);
+                            markMap.remove(chatId);
+                            sendAfterStart(chatId);
+                        }
+                        if ("/call_a_volunteer".equals(text)) {
+                            callVolunteer(chatId);
+                        }
+                    }
+        });
+    } catch(
+    Exception e)
+
+    {
+        logger.error(e.getMessage(), e);
     }
+        return UpdatesListener.CONFIRMED_UPDATES_ALL;
+}
 
     private void sendContacts(Update update) {
         Long chatId = update.callbackQuery().from().id();

@@ -5,48 +5,51 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Lob;
+import javax.persistence.*;
 import java.util.Arrays;
 import java.util.Objects;
 
-@AllArgsConstructor
 @NoArgsConstructor
-@Setter
-@Getter
+
 @Entity
+@Table(name = "photos")
 public class Photo {
     @Id
     @GeneratedValue
     private long id;
 
-    private String filePath;
-    private long fileSize;
     private String mediaType;
-    private long reportId;
 
-    @Lob
-    private byte[] preview;
 
-    public Photo(String filePath, long reportId) {
-        this.filePath = filePath;
-        this.reportId = reportId;
+    @Column(columnDefinition = "oid")
+    private byte[] data;
+
+    public Photo(String mediaType, byte[] data) {
+        this.mediaType = mediaType;
+        this.data = data;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Photo photo = (Photo) o;
-        return id == photo.id && fileSize == photo.fileSize && Objects.equals(filePath, photo.filePath) && Objects.equals(mediaType, photo.mediaType) && Arrays.equals(preview, photo.preview);
+    public long getId() {
+        return id;
     }
 
-    @Override
-    public int hashCode() {
-        int result = Objects.hash(id, filePath, fileSize, mediaType);
-        result = 31 * result + Arrays.hashCode(preview);
-        return result;
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
     }
 }

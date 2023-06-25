@@ -26,7 +26,16 @@ public abstract class Reports {
     @OneToOne
     private Photo photo;
 
-
+    @Override
+    public String toString() {
+        return "Reports{" +
+                "id=" + id +
+                ", diet='" + diet + '\'' +
+                ", behavior='" + behavior + '\'' +
+                ", wellBeing='" + wellBeing + '\'' +
+                ", sendDate=" + sendDate +
+                '}';
+    }
 
     public Reports(LocalDateTime sendDate) {
         this.sendDate = sendDate;
