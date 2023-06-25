@@ -37,27 +37,5 @@ public class PhotoService {
 
     }
 
-    public Photo uploadPhoto(Update update, Long reportId) {
-        Message message = update.message();
-        String fileId = message.photo()[0].fileId();
-        GetFile request = new GetFile(fileId);
-        GetFileResponse getFileResponse = telegramBot.execute(request);
-        File file = getFileResponse.file();
 
-        String fileName = file.fileUniqueId();
-        Path path = Path.of(photoDir, fileName);
-
-        try {
-            Files.write(path, telegramBot.getFileContent(file));
-        } catch (IOException e) {
-            logger.error("Ошибка при сохранении"
-            + e.getMessage()
-            + Arrays.toString(e.getStackTrace()),
-                    e);
-
-        }
-        Photo photo = new Photo(String.valueOf(path), reportId);
-        photoRepository.save(photo);
-        return photo;
-    }
 }

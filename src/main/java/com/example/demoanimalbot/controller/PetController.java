@@ -2,6 +2,8 @@ package com.example.demoanimalbot.controller;
 
 import com.example.demoanimalbot.model.pets.Cat;
 import com.example.demoanimalbot.model.pets.Dog;
+import com.example.demoanimalbot.model.reports.CatReport;
+import com.example.demoanimalbot.model.reports.DogReport;
 import com.example.demoanimalbot.service.PetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +18,7 @@ import java.util.Optional;
 @RestController
 public class PetController {
     private final PetService petService;
+
 
     public PetController(PetService petService) {
         this.petService = petService;
@@ -212,5 +215,48 @@ public class PetController {
     public List<Dog> findDogsByUserId(long userId) {
         return petService.findDogsByUserId(userId);
     }
-}
 
+    /**
+     * Контроллеры позволяют найти отчеты о питомцах от пользователей
+     *
+     * @param petId идентификатор питомца
+     * @return отчет о питомце
+     */
+    @Operation(summary = "Поиск отчета о питомце",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый отчет по идентификатору питомца",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "report-cats"
+    )
+    @GetMapping("/report-cats")
+    public CatReport findReportByCatId(long petId) {
+
+
+
+
+
+        return petService.findLastReportByCatId(petId);
+    }
+    @Operation(summary = "Поиск отчета о питомце",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый отчет по идентификатору питомца",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "report-dogs"
+    )
+    @GetMapping("/report-dogs")
+    public DogReport findReportByDogId(long petId) {
+        return petService.findLastReportByDogId(petId);
+        }
+}

@@ -10,6 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CatReportRepository extends JpaRepository<CatReport, Long> {
-
+   CatReport findFirstByCatIdOrderBySendDateDesc(long catId);
 
 }

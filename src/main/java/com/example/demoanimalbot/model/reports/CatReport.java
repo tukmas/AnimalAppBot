@@ -24,4 +24,6 @@ public class CatReport extends Reports {
         super(sendDate);
         this.cat = cat;
     }
+
+
 }

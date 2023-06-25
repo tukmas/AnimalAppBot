@@ -3,15 +3,13 @@ package com.example.demoanimalbot.service;
 import com.example.demoanimalbot.model.pets.Cat;
 import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.model.pets.Status;
+import com.example.demoanimalbot.model.reports.CatReport;
+import com.example.demoanimalbot.model.reports.DogReport;
 import com.example.demoanimalbot.model.users.UserCat;
 import com.example.demoanimalbot.model.users.UserDog;
-import com.example.demoanimalbot.repository.CatRepository;
-import com.example.demoanimalbot.repository.DogRepository;
-import com.example.demoanimalbot.repository.UserCatRepository;
-import com.example.demoanimalbot.repository.UserDogRepository;
+import com.example.demoanimalbot.repository.*;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -23,12 +21,16 @@ public class PetService {
     private final DogRepository dogRepository;
     private final UserCatRepository userCatRepository;
     private final UserDogRepository userDogRepository;
+    private final CatReportRepository catReportRepository;
+    private final DogReportRepository dogReportRepository;
 
-    public PetService(CatRepository catRepository, DogRepository dogRepository, UserCatRepository userCatRepository, UserDogRepository userDogRepository) {
+    public PetService(CatRepository catRepository, DogRepository dogRepository, UserCatRepository userCatRepository, UserDogRepository userDogRepository, CatReportRepository catReportRepository, DogReportRepository dogReportRepository) {
         this.catRepository = catRepository;
         this.dogRepository = dogRepository;
         this.userCatRepository = userCatRepository;
         this.userDogRepository = userDogRepository;
+        this.catReportRepository = catReportRepository;
+        this.dogReportRepository = dogReportRepository;
     }
 
     public Cat createCat(String name, int age, String breed) {
@@ -102,5 +104,11 @@ public class PetService {
         return dogRepository.findByUserId(userId);
     }
 
+    public CatReport findLastReportByCatId(long petId) {
+       return catReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
+    }
+    public DogReport findLastReportByDogId(long petId) {
+        return dogReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
+    }
 
 }
