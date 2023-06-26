@@ -29,6 +29,7 @@ public abstract class Pet {
     private Status status;
     private LocalDateTime dateOfAdoption;
     private LocalDateTime deadlineTime;
+    private LocalDateTime endOfProbation;
 
     public Pet(String name, int age, String breed) {
         this.name = name;

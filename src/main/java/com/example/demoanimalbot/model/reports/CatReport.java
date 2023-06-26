@@ -25,5 +25,8 @@ public class CatReport extends Reports {
         this.cat = cat;
     }
 
-
+    @Override
+    public String toString() {
+        return "";
+    }
 }
