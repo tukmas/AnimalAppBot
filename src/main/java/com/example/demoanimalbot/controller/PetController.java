@@ -5,11 +5,15 @@ import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.model.reports.CatReport;
 import com.example.demoanimalbot.model.reports.DogReport;
 import com.example.demoanimalbot.service.PetService;
+import com.example.demoanimalbot.service.ReportAnswers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,6 +54,7 @@ public class PetController {
                          @Parameter(description = "Порода питомца") @RequestParam(required = true) String breed) {
         return petService.createCat(name, age, breed);
     }
+
     @Operation(summary = "Создание в базе данных объекта Dog",
             responses = {
                     @ApiResponse(
@@ -97,6 +102,7 @@ public class PetController {
     public Optional<Cat> findCatById(long catId) {
         return petService.findCat(catId);
     }
+
     @Operation(summary = "Поиск объекта Dog в базе данных",
             responses = {
                     @ApiResponse(
@@ -145,6 +151,7 @@ public class PetController {
     public Cat takeCatAtHome(Long catId, Long userId) {
         return petService.takeCatAtHome(catId, userId);
     }
+
     @Operation(summary = "Усыновление объекта Dog и внесение соответствующих изменений в базу данных: " +
             "изменение статуса и заполнение поля user",
             responses = {
@@ -171,6 +178,7 @@ public class PetController {
     public Dog takeDogAtHome(Long dogId, Long userId) {
         return petService.takeDogAtHome(dogId, userId);
     }
+
     @Operation(summary = "Поиск владельца Cat в базе данных",
             responses = {
                     @ApiResponse(
@@ -193,6 +201,7 @@ public class PetController {
     public List<Cat> findCatsByUserId(long userId) {
         return petService.findCatsByUserId(userId);
     }
+
     /**
      * Контроллеры позволяют найти список собак, забранных Юзером из приюта
      *
@@ -222,6 +231,7 @@ public class PetController {
      * @param petId идентификатор питомца
      * @return отчет о питомце
      */
+
     @Operation(summary = "Поиск отчета о питомце",
             responses = {
                     @ApiResponse(
@@ -235,14 +245,33 @@ public class PetController {
             tags = "report-cats"
     )
     @GetMapping("/report-cats")
-    public CatReport findReportByCatId(long petId) {
-
-
-
-
-
+    public String[] findReportByCatId(long petId) {
         return petService.findLastReportByCatId(petId);
     }
+
+    @Operation(summary = "Просмотр фото из отчета о питомце",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый отчет по идентификатору питомца",
+                            content = @Content(
+                                    mediaType = MediaType.ALL_VALUE
+                            )
+                    )
+            },
+            tags = "report-cats"
+    )
+    @GetMapping("/report-cats-photo")
+    public ResponseEntity<byte[]> findPhotoByCatId(long petId) {
+        CatReport catReport = petService.findLastReportsPhotoByCatId(petId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(catReport.getPhoto().getMediaType()));
+        headers.setContentLength(catReport.getPhoto().getData().length);
+
+        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(catReport.getPhoto().getData());
+    }
+
     @Operation(summary = "Поиск отчета о питомце",
             responses = {
                     @ApiResponse(
@@ -256,7 +285,82 @@ public class PetController {
             tags = "report-dogs"
     )
     @GetMapping("/report-dogs")
-    public DogReport findReportByDogId(long petId) {
+    public String[] findReportByDogId(long petId) {
         return petService.findLastReportByDogId(petId);
-        }
+    }
+
+    @Operation(summary = "Просмотр фото из отчета о питомце",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Искомый отчет по идентификатору питомца",
+                            content = @Content(
+                                    mediaType = MediaType.ALL_VALUE
+                            )
+                    )
+            },
+            tags = "report-dogs"
+    )
+    @GetMapping("/report-dogs-photo")
+    public ResponseEntity<byte[]> findPhotoByDogId(long petId) {
+        DogReport dogReport = petService.findLastReportsPhotoByDogId(petId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(dogReport.getPhoto().getMediaType()));
+        headers.setContentLength(dogReport.getPhoto().getData().length);
+
+        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(dogReport.getPhoto().getData());
+    }
+
+    @Operation(summary = "Отправка сообщений пользователю об изменении испытательного срока",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Отправляется один из стандартных вариантов ответа",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "report-cats"
+    )
+    /**
+     * Контроллер позволяет отправлять сообщения пользователю о прохождении, непрохождении или продлении
+     * испытательного срока.
+     * Меняется статус кота с SHELTER на HOME в случае завершения испытательного срока.
+     *
+     * @param petId  - идентификатор кота, которого забирают из приюта
+     *
+     */
+    @PutMapping("/cat-answer")
+    public void sendAnswerCat(@Parameter(description = "ID питомца") @RequestParam(required = true) Long petId,
+                              @Parameter(description = "Вариант ответа") @RequestParam(required = true) ReportAnswers reportAnswers) {
+        petService.sendAnswerCat(petId, reportAnswers);
+    }
+    @Operation(summary = "Отправка сообщений пользователю об изменении испытательного срока",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Отправляется один из стандартных вариантов ответа",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "report-dogs"
+    )
+    /**
+     * Контроллер позволяет отправлять сообщения пользователю о прохождении, непрохождении или продлении
+     * испытательного срока.
+     * Меняется статус кота с SHELTER на HOME в случае завершения испытательного срока.
+     *
+     * @param petId  - идентификатор кота, которого забирают из приюта
+     *
+     */
+    @PutMapping("/dog-answer")
+    public void sendAnswerDog(@Parameter(description = "ID питомца") @RequestParam(required = true) Long petId,
+                              @Parameter(description = "Вариант ответа") @RequestParam(required = true) ReportAnswers reportAnswers) {
+        petService.sendAnswerDog(petId, reportAnswers);
+    }
+
 }

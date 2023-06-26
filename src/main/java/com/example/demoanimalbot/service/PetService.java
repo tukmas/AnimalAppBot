@@ -8,6 +8,8 @@ import com.example.demoanimalbot.model.reports.DogReport;
 import com.example.demoanimalbot.model.users.UserCat;
 import com.example.demoanimalbot.model.users.UserDog;
 import com.example.demoanimalbot.repository.*;
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.request.SendMessage;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,14 +26,16 @@ public class PetService {
     private final UserDogRepository userDogRepository;
     private final CatReportRepository catReportRepository;
     private final DogReportRepository dogReportRepository;
+    private final TelegramBot telegramBot;
 
-    public PetService(CatRepository catRepository, DogRepository dogRepository, UserCatRepository userCatRepository, UserDogRepository userDogRepository, CatReportRepository catReportRepository, DogReportRepository dogReportRepository) {
+    public PetService(CatRepository catRepository, DogRepository dogRepository, UserCatRepository userCatRepository, UserDogRepository userDogRepository, CatReportRepository catReportRepository, DogReportRepository dogReportRepository, TelegramBot telegramBot) {
         this.catRepository = catRepository;
         this.dogRepository = dogRepository;
         this.userCatRepository = userCatRepository;
         this.userDogRepository = userDogRepository;
         this.catReportRepository = catReportRepository;
         this.dogReportRepository = dogReportRepository;
+        this.telegramBot = telegramBot;
     }
 
     public Cat createCat(String name, int age, String breed) {
@@ -66,6 +70,7 @@ public class PetService {
         cat.get().setStatus(Status.PROBATION);
         cat.get().setUser(userCat.get());
         cat.get().setDateOfAdoption(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
+        cat.get().setEndOfProbation(cat.get().getDateOfAdoption().plusDays(30));
         cat.get().setDeadlineTime(cat.get().getDateOfAdoption().plusDays(1));
 
         return catRepository.save(cat.get());
@@ -86,6 +91,7 @@ public class PetService {
         dog.get().setStatus(Status.PROBATION);
         dog.get().setUser(userDog.get());
         dog.get().setDateOfAdoption(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
+        dog.get().setEndOfProbation(dog.get().getDateOfAdoption().plusDays(30));
         dog.get().setDeadlineTime(dog.get().getDateOfAdoption().plusDays(1));
 
         return dogRepository.save(dog.get());
@@ -105,11 +111,117 @@ public class PetService {
         return dogRepository.findByUserId(userId);
     }
 
-    public CatReport findLastReportByCatId(long petId) {
-       return catReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
-    }
-    public DogReport findLastReportByDogId(long petId) {
-        return dogReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
+    public String[] findLastReportByCatId(long petId) {
+
+        CatReport rep = catReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
+        String[] report = new String[4];
+        report[0] = "Питание " + rep.getDiet();
+        report[1] = "Поведение " + rep.getBehavior();
+        report[2] = "Самочувствие " + rep.getWellBeing();
+        report[3] = "Дата отчета: " + rep.getSendDate().toString();
+        return report;
     }
 
+    public CatReport findLastReportsPhotoByCatId(long petId) {
+        return catReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
+    }
+
+    public String[] findLastReportByDogId(long petId) {
+
+        DogReport rep = dogReportRepository.findFirstByDogIdOrderBySendDateDesc(petId);
+        String[] report = new String[4];
+        report[0] = "Питание " + rep.getDiet();
+        report[1] = "Поведение " + rep.getBehavior();
+        report[2] = "Самочувствие " + rep.getWellBeing();
+        report[3] = "Дата отчета: " + rep.getSendDate().toString();
+        return report;
+    }
+
+    public DogReport findLastReportsPhotoByDogId(long petId) {
+        return dogReportRepository.findFirstByDogIdOrderBySendDateDesc(petId);
+    }
+
+    /**
+     * Метод для отправки обратной связи усыновителю о
+     * правильности заполнения отчета,
+     * о завершении или продлении испытательного срока
+     * о непрохождении испытательного срока
+     *
+     * @param petId идентификатор питомца
+     */
+    public void sendAnswerCat(long petId, ReportAnswers reportAnswers) {
+        Long chatId = catRepository.findById(petId).get().getUser().getChatId();
+        String name = catRepository.findById(petId).get().getName();
+        Optional<Cat> cat = catRepository.findById(petId);
+        switch (reportAnswers) {
+            case BAD_REPORT -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, мы заметили, " +
+                            "что ты заполняешь отчет о питомце по имени " + name + " не так подробно," +
+                            " как необходимо. Пожалуйста, подойди ответственнее к этому занятию." +
+                            " В противном случае волонтеры приюта будут обязаны самолично проверять " +
+                            "условия содержания животного."));
+            case PROBATION_EXTENSION_14_DAYS -> {
+                cat.get().setEndOfProbation(cat.get().getEndOfProbation().plusDays(14));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 14 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case PROBATION_EXTENSION_30_DAYS -> {
+                cat.get().setEndOfProbation(cat.get().getEndOfProbation().plusDays(30));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 30 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case SUCCESSFUL_END_OF_PROBATION -> {
+                cat.get().setDeadlineTime(null);
+                cat.get().setStatus(Status.HOME);
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, поздравляем Вас с успешным завершением" +
+                                "испытательного срока для питомца по имени " + name));
+            }
+            case UNSUCCESSFUL_END_OF_PROBATION -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, к сожалению, Вы не прошли" +
+                            " испытательный срок. Просьба вернуть питомца по имени " + name + " обратно " +
+                            "в приют"));
+        }
+        catRepository.save(cat.get());
+    }
+
+    public void sendAnswerDog(long petId, ReportAnswers reportAnswers) {
+        Long chatId = dogRepository.findById(petId).get().getUser().getChatId();
+        String name = dogRepository.findById(petId).get().getName();
+        Optional<Dog> dog = dogRepository.findById(petId);
+        switch (reportAnswers) {
+            case BAD_REPORT -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, мы заметили, " +
+                            "что ты заполняешь отчет о питомце по имени " + name + " не так подробно," +
+                            " как необходимо. Пожалуйста, подойди ответственнее к этому занятию." +
+                            " В противном случае волонтеры приюта будут обязаны самолично проверять " +
+                            "условия содержания животного."));
+            case PROBATION_EXTENSION_14_DAYS -> {
+                dog.get().setEndOfProbation(dog.get().getEndOfProbation().plusDays(14));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 14 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case PROBATION_EXTENSION_30_DAYS -> {
+                dog.get().setEndOfProbation(dog.get().getEndOfProbation().plusDays(30));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 30 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case SUCCESSFUL_END_OF_PROBATION -> {
+                dog.get().setDeadlineTime(null);
+                dog.get().setStatus(Status.HOME);
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, поздравляем Вас с успешным завершением" +
+                                "испытательного срока для питомца по имени " + name));
+            }
+            case UNSUCCESSFUL_END_OF_PROBATION -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, к сожалению, Вы не прошли" +
+                            " испытательный срок. Просьба вернуть питомца по имени " + name + " обратно " +
+                            "в приют"));
+        }
+        dogRepository.save(dog.get());
+    }
 }
