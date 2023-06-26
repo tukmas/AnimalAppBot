@@ -5,6 +5,7 @@ import com.example.demoanimalbot.model.pets.Dog;
 import com.example.demoanimalbot.model.reports.CatReport;
 import com.example.demoanimalbot.model.reports.DogReport;
 import com.example.demoanimalbot.service.PetService;
+import com.example.demoanimalbot.service.ReportAnswers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -247,6 +248,7 @@ public class PetController {
     public String[] findReportByCatId(long petId) {
         return petService.findLastReportByCatId(petId);
     }
+
     @Operation(summary = "Просмотр фото из отчета о питомце",
             responses = {
                     @ApiResponse(
@@ -269,6 +271,7 @@ public class PetController {
 
         return ResponseEntity.status(HttpStatus.OK).headers(headers).body(catReport.getPhoto().getData());
     }
+
     @Operation(summary = "Поиск отчета о питомце",
             responses = {
                     @ApiResponse(
@@ -285,6 +288,7 @@ public class PetController {
     public String[] findReportByDogId(long petId) {
         return petService.findLastReportByDogId(petId);
     }
+
     @Operation(summary = "Просмотр фото из отчета о питомце",
             responses = {
                     @ApiResponse(
@@ -308,5 +312,55 @@ public class PetController {
         return ResponseEntity.status(HttpStatus.OK).headers(headers).body(dogReport.getPhoto().getData());
     }
 
+    @Operation(summary = "Отправка сообщений пользователю об изменении испытательного срока",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Отправляется один из стандартных вариантов ответа",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "report-cats"
+    )
+    /**
+     * Контроллер позволяет отправлять сообщения пользователю о прохождении, непрохождении или продлении
+     * испытательного срока.
+     * Меняется статус кота с SHELTER на HOME в случае завершения испытательного срока.
+     *
+     * @param petId  - идентификатор кота, которого забирают из приюта
+     *
+     */
+    @PutMapping("/cat-answer")
+    public void sendAnswerCat(@Parameter(description = "ID питомца") @RequestParam(required = true) Long petId,
+                              @Parameter(description = "Вариант ответа") @RequestParam(required = true) ReportAnswers reportAnswers) {
+        petService.sendAnswerCat(petId, reportAnswers);
+    }
+    @Operation(summary = "Отправка сообщений пользователю об изменении испытательного срока",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Отправляется один из стандартных вариантов ответа",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            },
+            tags = "report-dogs"
+    )
+    /**
+     * Контроллер позволяет отправлять сообщения пользователю о прохождении, непрохождении или продлении
+     * испытательного срока.
+     * Меняется статус кота с SHELTER на HOME в случае завершения испытательного срока.
+     *
+     * @param petId  - идентификатор кота, которого забирают из приюта
+     *
+     */
+    @PutMapping("/dog-answer")
+    public void sendAnswerDog(@Parameter(description = "ID питомца") @RequestParam(required = true) Long petId,
+                              @Parameter(description = "Вариант ответа") @RequestParam(required = true) ReportAnswers reportAnswers) {
+        petService.sendAnswerDog(petId, reportAnswers);
+    }
 
 }

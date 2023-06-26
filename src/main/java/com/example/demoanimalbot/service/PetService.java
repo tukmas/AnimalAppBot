@@ -9,6 +9,7 @@ import com.example.demoanimalbot.model.users.UserCat;
 import com.example.demoanimalbot.model.users.UserDog;
 import com.example.demoanimalbot.repository.*;
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.request.SendMessage;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -120,9 +121,11 @@ public class PetService {
         report[3] = "Дата отчета: " + rep.getSendDate().toString();
         return report;
     }
+
     public CatReport findLastReportsPhotoByCatId(long petId) {
         return catReportRepository.findFirstByCatIdOrderBySendDateDesc(petId);
     }
+
     public String[] findLastReportByDogId(long petId) {
 
         DogReport rep = dogReportRepository.findFirstByDogIdOrderBySendDateDesc(petId);
@@ -133,19 +136,92 @@ public class PetService {
         report[3] = "Дата отчета: " + rep.getSendDate().toString();
         return report;
     }
+
     public DogReport findLastReportsPhotoByDogId(long petId) {
         return dogReportRepository.findFirstByDogIdOrderBySendDateDesc(petId);
     }
+
     /**
      * Метод для отправки обратной связи усыновителю о
      * правильности заполнения отчета,
      * о завершении или продлении испытательного срока
      * о непрохождении испытательного срока
      *
-     * @param catId идентификатор питомца
-     *
+     * @param petId идентификатор питомца
      */
-    public void sendAnswer(long catId, ReportAnswers reportAnswers) {
+    public void sendAnswerCat(long petId, ReportAnswers reportAnswers) {
+        Long chatId = catRepository.findById(petId).get().getUser().getChatId();
+        String name = catRepository.findById(petId).get().getName();
+        Optional<Cat> cat = catRepository.findById(petId);
+        switch (reportAnswers) {
+            case BAD_REPORT -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, мы заметили, " +
+                            "что ты заполняешь отчет о питомце по имени " + name + " не так подробно," +
+                            " как необходимо. Пожалуйста, подойди ответственнее к этому занятию." +
+                            " В противном случае волонтеры приюта будут обязаны самолично проверять " +
+                            "условия содержания животного."));
+            case PROBATION_EXTENSION_14_DAYS -> {
+                cat.get().setEndOfProbation(cat.get().getEndOfProbation().plusDays(14));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 14 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case PROBATION_EXTENSION_30_DAYS -> {
+                cat.get().setEndOfProbation(cat.get().getEndOfProbation().plusDays(30));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 30 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case SUCCESSFUL_END_OF_PROBATION -> {
+                cat.get().setDeadlineTime(null);
+                cat.get().setStatus(Status.HOME);
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, поздравляем Вас с успешным завершением" +
+                                "испытательного срока для питомца по имени " + name));
+            }
+            case UNSUCCESSFUL_END_OF_PROBATION -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, к сожалению, Вы не прошли" +
+                            " испытательный срок. Просьба вернуть питомца по имени " + name + " обратно " +
+                            "в приют"));
+        }
+        catRepository.save(cat.get());
+    }
 
+    public void sendAnswerDog(long petId, ReportAnswers reportAnswers) {
+        Long chatId = dogRepository.findById(petId).get().getUser().getChatId();
+        String name = dogRepository.findById(petId).get().getName();
+        Optional<Dog> dog = dogRepository.findById(petId);
+        switch (reportAnswers) {
+            case BAD_REPORT -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, мы заметили, " +
+                            "что ты заполняешь отчет о питомце по имени " + name + " не так подробно," +
+                            " как необходимо. Пожалуйста, подойди ответственнее к этому занятию." +
+                            " В противном случае волонтеры приюта будут обязаны самолично проверять " +
+                            "условия содержания животного."));
+            case PROBATION_EXTENSION_14_DAYS -> {
+                dog.get().setEndOfProbation(dog.get().getEndOfProbation().plusDays(14));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 14 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case PROBATION_EXTENSION_30_DAYS -> {
+                dog.get().setEndOfProbation(dog.get().getEndOfProbation().plusDays(30));
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, назначены дополнительные 30 " +
+                                "дней испытательного срока для питомца по имени " + name));
+            }
+            case SUCCESSFUL_END_OF_PROBATION -> {
+                dog.get().setDeadlineTime(null);
+                dog.get().setStatus(Status.HOME);
+                telegramBot.execute(new SendMessage(chatId,
+                        "Дорогой усыновитель, поздравляем Вас с успешным завершением" +
+                                "испытательного срока для питомца по имени " + name));
+            }
+            case UNSUCCESSFUL_END_OF_PROBATION -> telegramBot.execute(new SendMessage(chatId,
+                    "Дорогой усыновитель, к сожалению, Вы не прошли" +
+                            " испытательный срок. Просьба вернуть питомца по имени " + name + " обратно " +
+                            "в приют"));
+        }
+        dogRepository.save(dog.get());
     }
 }

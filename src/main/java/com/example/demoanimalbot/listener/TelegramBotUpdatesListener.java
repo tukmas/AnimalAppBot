@@ -209,9 +209,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                                     new SendMessage(chatId, "Опишите рацион питомца"));
 
                                         }
-                                        else
+                                        else{
                                             telegramBot.execute(
-                                                    new SendMessage(chatId, "Питомец с таким именем не найден. Попробуйте еще раз или выберите пункт Меню."));
+                                                    new SendMessage(chatId, "Питомец с таким именем не найден." +
+                                                            " Попробуйте еще раз или выберите пункт Меню."));}
                                     }
 
                                     case SEND_DIET -> {
@@ -219,34 +220,40 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
 
                                             catReportMap.get(chatId).setDiet(text);
-                                        } else dogReportMap.get(chatId).setDiet(text);
+                                        } else
+                                        {dogReportMap.get(chatId).setDiet(text);
 
                                         statusMap.put(chatId, AnswerStatus.SEND_WELLBEING);
                                         telegramBot.execute(
                                                 new SendMessage(chatId, "Опишите общее самочувствие и привыкание к новому месту")
                                         );
+                                        }
                                     }
                                     case SEND_WELLBEING -> {
 
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setWellBeing(text);
-                                        } else dogReportMap.get(chatId).setWellBeing(text);
+                                        } else
+                                        {dogReportMap.get(chatId).setWellBeing(text);
 
                                         statusMap.put(chatId, AnswerStatus.SEND_BEHAVIOR);
                                         telegramBot.execute(
                                                 new SendMessage(chatId, "Опишите изменение в поведении, например, отказ от старых привычек, приобретение новых")
                                         );
+                                        }
                                     }
                                     case SEND_BEHAVIOR -> {
 
                                         if (markMap.get(chatId).equals(ShelterMark.CAT)) {
                                             catReportMap.get(chatId).setBehavior(text);
 
-                                        } else dogReportMap.get(chatId).setBehavior(text);
-                                        statusMap.put(chatId, AnswerStatus.SEND_FOTO);
-                                        telegramBot.execute(
-                                                new SendMessage(chatId, "Пришлите фото питомца")
-                                        );
+                                        } else {
+                                            dogReportMap.get(chatId).setBehavior(text);
+                                            statusMap.put(chatId, AnswerStatus.SEND_FOTO);
+                                            telegramBot.execute(
+                                                    new SendMessage(chatId, "Пришлите фото питомца")
+                                            );
+                                        }
                                     }
                                     case SEND_FOTO -> {
                                         if (update.message().photo() != null) {
